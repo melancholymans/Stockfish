@@ -21,13 +21,17 @@
 #define PLATFORM_H_INCLUDED
 
 #ifdef _MSC_VER
-
+/*
+コンパイルエラー抑制
+*/
 // Disable some silly and noisy warnings from MSVC compiler
 #pragma warning(disable: 4127) // Conditional expression is constant
 #pragma warning(disable: 4146) // Unary minus operator applied to unsigned type
 #pragma warning(disable: 4800) // Forcing value to bool 'true' or 'false'
 #pragma warning(disable: 4996) // Function _ftime() may be unsafe
-
+/*
+データ型再定義
+*/
 // MSVC does not support <inttypes.h>
 typedef   signed __int8    int8_t;
 typedef unsigned __int8   uint8_t;
@@ -73,17 +77,30 @@ typedef void*(*pt_start_fn)(void*);
 #else // Windows and MinGW
 
 #  include <sys/timeb.h>
-
+/*
+現在時刻をミリセカンド単位で返す
+*/
 inline int64_t system_time_to_msec() {
   _timeb t;
   _ftime(&t);
   return t.time * 1000LL + t.millitm;
 }
-
+/*
+Microsoft Windowsプラットフォームのヘッダファイルwindows.hは悪名高いmin, maxマクロを定義するため、
+プリプロセス時に意図せずminやmaxが置換されてしまい、妙なコンパイルエラーを引き起こす場合がある。
+回避策としてヘッダファイルwindows.hのincludeより前に、マクロ NOMINMAX を定義しておく。
+Microsoft KBで公開されている正攻法。
+*/
 #ifndef NOMINMAX
 #  define NOMINMAX // disable macros min() and max()
 #endif
-
+/*
+Windowsプログラムにはよく Windows.ｈ を #include します。
+ただし、Windows.h には、実は沢山のスイッチがかけてます。
+WIN32_LEAN_AND_MEANはその中の一つです。
+Windows.ｈ を #include する前に、WIN32_LEAN_AND_MEAN を #define することで、
+「余計」なヘッダファイルは include されず、コンパイルはすばやく終わるといわれています。
+*/
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
@@ -92,11 +109,17 @@ inline int64_t system_time_to_msec() {
 // We use critical sections on Windows to support Windows XP and older versions.
 // Unfortunately, cond_wait() is racy between lock_release() and WaitForSingleObject()
 // but apart from this they have the same speed performance of SRW locks.
+/*
+スレッド関係の関数をUNIX風に再定義している
+*/
 typedef CRITICAL_SECTION Lock;
 typedef HANDLE WaitCondition;
 typedef HANDLE NativeHandle;
 
 // On Windows 95 and 98 parameter lpThreadId may not be null
+/*
+すぐしたにあるthread_create関数の引数のみに使ってある、用途不明
+*/
 inline DWORD* dwWin9xKludge() { static DWORD dw; return &dw; }
 
 #  define lock_init(x) InitializeCriticalSection(&(x))
