@@ -42,27 +42,45 @@
 
 #include "platform.h"
 
+/*
+用途不明
+*/
 #define unlikely(x) (x) // For code annotation purposes
 
+/*
+*/
 #if defined(_WIN64) && !defined(IS_64BIT)
 #  include <intrin.h> // MSVC popcnt and bsfq instrinsics
 #  define IS_64BIT
 #  define USE_BSFQ
 #endif
 
+/*
+POPCNT命令を使いたいがINTEL COMPILERではない
+*/
 #if defined(USE_POPCNT) && defined(_MSC_VER) && defined(__INTEL_COMPILER)
 #  include <nmmintrin.h> // Intel header for _mm_popcnt_u64() intrinsic
 #endif
 
+/*
+PEXT命令を使いたいがCPUがサポートしていない
+PEXT命令をとは下記URL参照のこと
+BMI2 (Bit Manipulation Instruction Set 2)
+http://en.wikipedia.org/wiki/Bit_Manipulation_Instruction_Sets#BMI2_.28Bit_Manipulation_Instruction_Set_2.29
+*/
 #if defined(USE_PEXT)
 #  include <immintrin.h> // Header for _pext_u64() intrinsic
 #else
 #  define _pext_u64(b, m) (0)
 #endif
 
+/*
+先行読みをしたいので<xmmintrin.h>を読み込んでおく
+*/
 #  if !defined(NO_PREFETCH) && (defined(__INTEL_COMPILER) || defined(_MSC_VER))
 #   include <xmmintrin.h> // Intel and Microsoft header for _mm_prefetch()
 #  endif
+
 
 #define CACHE_LINE_SIZE 64
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
@@ -71,6 +89,9 @@
 #  define CACHE_LINE_ALIGNMENT  __attribute__ ((aligned(CACHE_LINE_SIZE)))
 #endif
 
+/*
+inline関数の展開の仕方？
+*/
 #ifdef _MSC_VER
 #  define FORCE_INLINE  __forceinline
 #elif defined(__GNUC__)
@@ -79,18 +100,27 @@
 #  define FORCE_INLINE  inline
 #endif
 
+/*
+POPCNT命令を使いたかったらHasPopCntをtrueに
+*/
 #ifdef USE_POPCNT
 const bool HasPopCnt = true;
 #else
 const bool HasPopCnt = false;
 #endif
 
+/*
+PEXT命令を使いたいならHasPextをtrueに
+*/
 #ifdef USE_PEXT
 const bool HasPext = true;
 #else
 const bool HasPext = false;
 #endif
 
+/*
+このIS_64BITはマシンのことか。コンパイラのことか？
+*/
 #ifdef IS_64BIT
 const bool Is64Bit = true;
 #else
@@ -100,7 +130,13 @@ const bool Is64Bit = false;
 typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
+/*
+着手リストの最大長さ
+*/
 const int MAX_MOVES      = 256;
+/*
+最大探索深さ
+*/
 const int MAX_PLY        = 120;
 const int MAX_PLY_PLUS_6 = MAX_PLY + 6;
 
@@ -115,12 +151,18 @@ const int MAX_PLY_PLUS_6 = MAX_PLY + 6;
 /// Special cases are MOVE_NONE and MOVE_NULL. We can sneak these in because in
 /// any normal move destination square is always different from origin square
 /// while MOVE_NONE and MOVE_NULL have the same origin and destination square.
-
+/*
+着手のデータ構造
+MOVE_NONEは手がないことを表す
+MOVE_NULLは用途不明
+*/
 enum Move {
   MOVE_NONE,
   MOVE_NULL = 65
 };
 
+/*
+*/
 enum MoveType {
   NORMAL,
   PROMOTION = 1 << 14,
