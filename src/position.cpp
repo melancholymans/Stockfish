@@ -53,7 +53,10 @@ namespace Zobrist {
   Key exclusion;
 }
 
-Key Position::exclusion_key() const { return st->key ^ Zobrist::exclusion;}
+Key Position::exclusion_key() const 
+{ 
+	return st->key ^ Zobrist::exclusion;
+}
 
 namespace {
 
@@ -1110,10 +1113,24 @@ Value Position::see(Move m) const {
 
 /// Position::is_draw() tests whether the position is drawn by material, 50 moves
 /// rule or repetition. It does not detect stalemates.
+/*
+ドロー（引き分け）
+	次の場合は、「自動的」にドローとなる。
+	ステイルメイト ： 自分の手番で、自分のキングにチェックされてはいないが、合法手がない状況を指す。
+	ドロー・オファー： 片方がドローを提案し、もう片方がそれを承諾した場合。
+	デッド・ポジション[8]： 駒の兵力不足のため、双方が相手のキングをチェックメイトできなくなった状況を指す。次の駒の組合せの時は、たとえ敵の駒がキング一つだけであってもチェックメイトすることはできない。[9]
+	キング + ビショップ1個
+	キング + ナイト1個
+	（キング + ナイト2個
+
+次の場合、一方のプレーヤーの「申請（クレーム）」によりドローとなる
+50手ルール ： 50手連続して両者ともポーンが動かず、またお互いに駒を取らない場合。
+スリーフォールド・レピティション（同形三復）： 同一の局面が3回現れた場合。
+*/
 
 bool Position::is_draw() const {
 
-  if (   !pieces(PAWN)
+  if ( !pieces(PAWN)
       && (non_pawn_material(WHITE) + non_pawn_material(BLACK) <= BishopValueMg))
       return true;
 
@@ -1173,7 +1190,9 @@ void Position::flip() {
 
 /// Position::pos_is_ok() performs some consistency checks for the position object.
 /// This is meant to be helpful when debugging.
-
+/*
+デバック用のチエックするもの？
+*/
 bool Position::pos_is_ok(int* step) const {
 
   // Which parts of the position should be verified?
@@ -1189,32 +1208,53 @@ bool Position::pos_is_ok(int* step) const {
 
   if (step)
       *step = 1;
-
+	/*
+	sideToMoveがWHITE,BLACKになっているか
+	ちゃんとking_square配列に正しくkingの座標が入っているか
+	ep_square() != SQ_NONEは用途不明
+	relative_rank(sideToMove, ep_square()) != RANK_6)は用途不明
+	*/
   if (   (sideToMove != WHITE && sideToMove != BLACK)
       || piece_on(king_square(WHITE)) != W_KING
       || piece_on(king_square(BLACK)) != B_KING
       || (   ep_square() != SQ_NONE
           && relative_rank(sideToMove, ep_square()) != RANK_6))
       return false;
+	/*
 
+	*/
   if (step && ++*step, testBitboards)
   {
       // The intersection of the white and black pieces must be empty
+			/*
+			お互いのカラーのANDをとると必ず0になるはず、成らなかったら
+			おかしい
+			*/
       if (pieces(WHITE) & pieces(BLACK))
           return false;
 
       // The union of the white and black pieces must be equal to all
       // occupied squares
+			/*
+			WHITEとBLACKのORは全ての駒と一緒のはず
+			そうでなければおかしい
+			*/
       if ((pieces(WHITE) | pieces(BLACK)) != pieces())
           return false;
 
       // Separate piece type bitboards must have empty intersections
+			/*
+			駒種が違うもの同士は重ならない
+			重なったらおかしい
+			*/
       for (PieceType p1 = PAWN; p1 <= KING; ++p1)
           for (PieceType p2 = PAWN; p2 <= KING; ++p2)
               if (p1 != p2 && (pieces(p1) & pieces(p2)))
                   return false;
   }
-
+	/*
+	用途不明
+	*/
   if (step && ++*step, testState)
   {
       StateInfo si;
@@ -1228,12 +1268,18 @@ bool Position::pos_is_ok(int* step) const {
           || st->checkersBB != si.checkersBB)
           return false;
   }
-
+	/*
+	std::countは、配列やコンテナの特定の要素がいくつ含まれているか返すテンプレート関数です。
+	std::countの第１引数には、配列の最初を指定します。 std::countの第２引数には、配列の終わりを指定します。 std::countの第３引数には、探したい対象を指定します。
+	つまりboard配列の中を調べてW_KING,B_KINGが１以外あるのはおかしいことを検出している
+	*/
   if (step && ++*step, testKingCount)
       if (   std::count(board, board + SQUARE_NB, W_KING) != 1
           || std::count(board, board + SQUARE_NB, B_KING) != 1)
           return false;
-
+	/*
+	ここまで
+	*/
   if (step && ++*step, testKingCapture)
       if (attackers_to(king_square(~sideToMove)) & pieces(sideToMove))
           return false;
