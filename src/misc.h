@@ -26,11 +26,30 @@
 
 #include "types.h"
 
+/*
+stackfishの簡単な紹介文を構築する
+version番号、　使用OSのbit数、BMI2を使っているか、SIMD命令の使用
+などを表示する。
+*/
 extern const std::string engine_info(bool to_uci = false);
+/*
+指定されたミリ秒だけ待つ
+thread.hのwait_for関数から呼び出される
+*/
 extern void timed_wait(WaitCondition&, Lock&, int);
+/*
+プリフェッチ（先読み）
+事前にプロセッサに近いキャッシュ階層にデータをロードしておきたい場合に使用する方法です．
+ところどころに先読みさせたいメモリを指定してあるようだが、かなり細かい分析が必要な気がする
+*/
 extern void prefetch(char* addr);
+/*
+用途不明
+*/
 extern void start_logger(bool b);
-
+/*
+用途不明、使用している痕跡なし
+*/
 extern void dbg_hit_on(bool b);
 extern void dbg_hit_on_c(bool c, bool b);
 extern void dbg_mean_of(int v);
