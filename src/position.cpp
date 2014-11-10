@@ -1157,6 +1157,20 @@ static char toggle_case(char c) {
   return char(islower(c) ? toupper(c) : tolower(c));
 }
 
+/*
+getline(is,str,delim);
+	is:文字列の抽出元となる入力ストリーム。
+	str:入力ストリームから抽出した文字の読み込み先となる文字列。
+	delim:行の区切り記号。
+	splitの代わりみたいな関数
+string.insert(index,string)
+	indexの位置に文字列を挿入する
+std::transform(start,end,result,func)
+	startからendまでの範囲に関数funcを適用してresultに結果を返す
+	関数toggle_caseは文字（文字列ではない）を受け取りそれが小文字なら
+	大文字にして返す、大文字だったら小文字にして返す
+	ここまで
+*/
 void Position::flip() {
 
   string f, token;
@@ -1167,7 +1181,9 @@ void Position::flip() {
       std::getline(ss, token, r > RANK_1 ? '/' : ' ');
       f.insert(0, token + (f.empty() ? " " : "/"));
   }
-
+	/*
+	カラーを変えている
+	*/
   ss >> token; // Active color
   f += (token == "w" ? "B " : "W "); // Will be lowercased later
 

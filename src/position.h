@@ -415,7 +415,14 @@ public:
   bool is_draw() const;
 
   // Position consistency check, for debugging
+	/*
+	局面の不整合などをチエックしている
+	詳細不明なところもある
+	*/
   bool pos_is_ok(int* step = NULL) const;
+	/*
+	ここまで、position.cppにコメント入れ中
+	*/
   void flip();
 
 private:
