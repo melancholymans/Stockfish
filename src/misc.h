@@ -28,7 +28,7 @@
 
 /*
 stackfishの簡単な紹介文を構築する
-version番号、　使用OSのbit数、BMI2を使っているか、SIMD命令の使用
+version番号、使用OSのbit数、BMI2を使っているか、SIMD命令の使用
 などを表示する。
 */
 extern const std::string engine_info(bool to_uci = false);
@@ -43,10 +43,12 @@ extern void timed_wait(WaitCondition&, Lock&, int);
 ところどころに先読みさせたいメモリを指定してあるようだが、かなり細かい分析が必要な気がする
 */
 extern void prefetch(char* addr);
+
 /*
 用途不明
 */
 extern void start_logger(bool b);
+
 /*
 用途不明、使用している痕跡なし
 */
@@ -55,19 +57,27 @@ extern void dbg_hit_on_c(bool c, bool b);
 extern void dbg_mean_of(int v);
 extern void dbg_print();
 
+/*
+用途不明
+*/
 
 struct Log : public std::ofstream {
   Log(const std::string& f = "log.txt") : std::ofstream(f.c_str(), std::ios::out | std::ios::app) {}
  ~Log() { if (is_open()) close(); }
 };
 
-
+/*
+用途不明
+*/
 namespace Time {
   typedef int64_t point;
   inline point now() { return system_time_to_msec(); }
 }
 
-
+/*
+用途不明
+ハッシュテーブルだと思うが詳細不明
+*/
 template<class Entry, int Size>
 struct HashTable {
   HashTable() : table(Size, Entry()) {}
@@ -77,7 +87,9 @@ private:
   std::vector<Entry> table;
 };
 
-
+/*
+用途不明
+*/
 enum SyncCout { IO_LOCK, IO_UNLOCK };
 std::ostream& operator<<(std::ostream&, SyncCout);
 
