@@ -551,6 +551,8 @@ inline Bitboard Position::attacks_from(Square s) const {
         : StepAttacksBB[Pt][s];
 }
 
+/*
+*/
 template<>
 inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
   return StepAttacksBB[make_piece(c, PAWN)][s];

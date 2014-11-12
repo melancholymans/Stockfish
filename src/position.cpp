@@ -497,7 +497,9 @@ Bitboard Position::check_blockers(Color c, Color kingColor) const {
 
 /// Position::attackers_to() computes a bitboard of all pieces which attack a
 /// given square. Slider attacks use the occ bitboard to indicate occupancy.
+/*
 
+*/
 Bitboard Position::attackers_to(Square s, Bitboard occ) const {
 
   return  (attacks_from<PAWN>(s, BLACK) & pieces(WHITE, PAWN))

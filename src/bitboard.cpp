@@ -173,7 +173,13 @@ void Bitboards::init() {
           PawnAttackSpan[c][s] = InFrontBB[c][rank_of(s)] & AdjacentFilesBB[file_of(s)];
           PassedPawnMask[c][s] = ForwardBB[c][s] | PawnAttackSpan[c][s];
       }
+	/*
+	SquareDistance•Ï”‚Ì‰Šú‰»
+		SquareDistance•Ï”‚É‚ÍÀ•Ws1‚Æs2‚Ì‹——£‚ğ“ü‚ê‚Ä‚¢‚é
+		’A‚µ—ñ‚Æs‚Ì‹——£‚Ì‘å‚«‚¢•û‚ğ‚¢‚ê‚éB
+	DistanceRingsBB•Ï”‚Ì‰Šú‰»
 
+	*/
   for (Square s1 = SQ_A1; s1 <= SQ_H8; ++s1)
       for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)
           if (s1 != s2)
@@ -184,7 +190,9 @@ void Bitboards::init() {
 
   int steps[][9] = { {}, { 7, 9 }, { 17, 15, 10, 6, -6, -10, -15, -17 },
                      {}, {}, {}, { 9, 7, -7, -9, 8, 1, -1, -8 } };
-
+	/*
+	StepAttacksBB•Ï”‚Ì‰Šúİ’è
+	*/
   for (Color c = WHITE; c <= BLACK; ++c)
       for (PieceType pt = PAWN; pt <= KING; ++pt)
           for (Square s = SQ_A1; s <= SQ_H8; ++s)
