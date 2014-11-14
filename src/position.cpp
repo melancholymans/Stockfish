@@ -498,7 +498,14 @@ Bitboard Position::check_blockers(Color c, Color kingColor) const {
 /// Position::attackers_to() computes a bitboard of all pieces which attack a
 /// given square. Slider attacks use the occ bitboard to indicate occupancy.
 /*
-
+attacks_from<>関数の概要
+	指定した駒コード、盤座標にある駒の利きのbitboardを返す。ただしPAWNは進む方向と
+	駒を取る利きが違う、attacks_fromはあくまで駒をとる利きのみかえす
+	また非飛び駒だけ
+attacks_bb
+	
+指定した座標に利いている全ての駒（カラーに関係なく）を検出してビットを立てた
+bitboardを返す
 */
 Bitboard Position::attackers_to(Square s, Bitboard occ) const {
 

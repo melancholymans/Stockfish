@@ -552,6 +552,7 @@ inline Bitboard Position::attacks_from(Square s) const {
 }
 
 /*
+w’è‚µ‚½À•W‚É—˜‚¢‚Ä‚¢‚é‹î‚Ìbitboard‚ğ•Ô‚·
 */
 template<>
 inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
