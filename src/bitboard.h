@@ -108,6 +108,10 @@ inline Bitboard operator^(Bitboard b, Square s) {
   return b ^ SquareBB[s];
 }
 
+/*
+ˆø”‚Ìbitboard‚ª‚Pbit‚µ‚©—§‚Á‚Ä‚¢‚È‚©‚Á‚½‚ç
+0‚ğ•Ô‚·A•¡”—§‚Á‚Ä‚¢‚½‚ç”ñ0‚ğ•Ô‚·
+*/
 inline bool more_than_one(Bitboard b) {
   return b & (b - 1);
 }

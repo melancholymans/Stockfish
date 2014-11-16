@@ -37,12 +37,12 @@ struct Thread;
 */
 struct CheckInfo {
 
-  explicit CheckInfo(const Position&);
+	explicit CheckInfo(const Position&);
 
-  Bitboard dcCandidates;
-  Bitboard pinned;
-  Bitboard checkSq[PIECE_TYPE_NB];
-  Square ksq;
+	Bitboard dcCandidates;
+	Bitboard pinned;
+	Bitboard checkSq[PIECE_TYPE_NB];
+	Square ksq;
 };
 
 
@@ -59,16 +59,16 @@ positionは局面を保持するクラスで、do_moveによって
 使用される情報を入れておく構造体かな
 */
 struct StateInfo {
-  Key pawnKey, materialKey;
-  Value npMaterial[COLOR_NB];
-  int castlingRights, rule50, pliesFromNull;
-  Score psq;
-  Square epSquare;
+	Key pawnKey, materialKey;
+	Value npMaterial[COLOR_NB];
+	int castlingRights, rule50, pliesFromNull;
+	Score psq;
+	Square epSquare;
 
-  Key key;
-  Bitboard checkersBB;
-  PieceType capturedType;
-  StateInfo* previous;
+	Key key;
+	Bitboard checkersBB;
+	PieceType capturedType;
+	StateInfo* previous;
 };
 
 
@@ -97,9 +97,9 @@ public:
   Position& operator=(const Position&);
   static void init();
 
-  // Text input/output
-  /*
-  fenStrは局面を文字列で表現したもの
+	// Text input/output
+	/*
+	fenStrは局面を文字列で表現したもの
 	＜例＞
 	"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 	R--rook,N--night,B--bishop,Q--queen,K--king,P--pawn,大文字はwhite（先手）
@@ -108,7 +108,7 @@ public:
 	指すカラーをw/bで表現、その次のKQkqは不明 -も不明　0 1も不明
 	（追記）
 	KQkqはキャスリングに関係するなにか
-  */
+	*/
 	/*
 	set関数はPositionクラスのコンストラクタから呼ばれ
 	fenStrを解析して内部データを更新している。
@@ -121,17 +121,17 @@ public:
 	他にもいろいろ局面保持、局面更新に必要なものを初期化しているが
 	詳細不明
 	*/
-  void set(const std::string& fenStr, bool isChess960, Thread* th);
+	void set(const std::string& fenStr, bool isChess960, Thread* th);
 	/*
 	現在の局面のfenStr文字列に変換する
 	*/
-  const std::string fen() const;
+	const std::string fen() const;
 	/*
 	指した手と現在の局面を文字列にして返す
 	*/
-  const std::string pretty(Move m = MOVE_NONE) const;
+	const std::string pretty(Move m = MOVE_NONE) const;
 
-  // Position representation
+	// Position representation
 	/*
 	用途不明
 	（追記）
@@ -141,43 +141,43 @@ public:
 	ことを示している。（bitboardを読みだして返す
 	関数なので変更することがない）
 	*/
-  Bitboard pieces() const;
+	Bitboard pieces() const;
 	/*
 	指定した駒種が立ったbitboardを返す
 	*/
-  Bitboard pieces(PieceType pt) const;
+	Bitboard pieces(PieceType pt) const;
 	/*
 	pt1,pt2で指定した駒種が立ったbitboardを返す
 	*/
-  Bitboard pieces(PieceType pt1, PieceType pt2) const;
+	Bitboard pieces(PieceType pt1, PieceType pt2) const;
 	/*
 	指定したカラーの駒が立っているbitboardを返す
 	*/
-  Bitboard pieces(Color c) const;
+	Bitboard pieces(Color c) const;
 	/*
 	指定した駒種、指定したカラーの駒が立っているbitboardを返す
 	*/
-  Bitboard pieces(Color c, PieceType pt) const;
+	Bitboard pieces(Color c, PieceType pt) const;
 	/*
 	指定した駒種pt1,pt2、指定したカラーの駒が立っているbitboardを返す
 	*/
-  Bitboard pieces(Color c, PieceType pt1, PieceType pt2) const;
+	Bitboard pieces(Color c, PieceType pt1, PieceType pt2) const;
 	/*
 	メンバー変数board[64]の座標を指定して駒コードを返す
 	*/
-  Piece piece_on(Square s) const;
+	Piece piece_on(Square s) const;
 	/*
 	カラーを指定してpieceList[COLOR][PIECE_TYPE][16]変数からkingの座標を返す
 	*/
-  Square king_square(Color c) const;
+	Square king_square(Color c) const;
 	/*
 	用途不明
 	*/
-  Square ep_square() const;
+	Square ep_square() const;
 	/*
 	指定した座標に駒がなかったらtrueを返す
 	*/
-  bool empty(Square s) const;
+	bool empty(Square s) const;
 	/*
 	カラーと駒種を指定すればpieceCount[COLOR][PIECE_TYPE]を
 	返す。pieceCount配列がなんなのか分かっていないが
@@ -186,77 +186,77 @@ public:
 	おそらく駒種ごとにcount関数をテンプレート化しているのでは
 	それだけ高速に動作する？
 	*/
-  template<PieceType Pt> int count(Color c) const;
+	template<PieceType Pt> int count(Color c) const;
 	/*
 	カラーと駒種を指定すればpieceList[COLOR][PIECE_TYPE]の
 	座標リスト（配列）を返してくる
 	この関数も駒種ごとにテンプレート化されている？
 	*/
-  template<PieceType Pt> const Square* list(Color c) const;
+	template<PieceType Pt> const Square* list(Color c) const;
 
-  // Castling
+	// Castling
 	/*
 	用途不明
 	多分、キャステイングのことだと思う
 	*/
-  int can_castle(Color c) const;
+	int can_castle(Color c) const;
 	/*
 	用途不明
 	多分、キャステイングのことだと思う
 	*/
-  int can_castle(CastlingRight cr) const;
+	int can_castle(CastlingRight cr) const;
 	/*
 	用途不明
 	多分、キャステイングのことだと思う
 	*/
-  bool castling_impeded(CastlingRight cr) const;
+	bool castling_impeded(CastlingRight cr) const;
 	/*
 	用途不明
 	多分、キャステイングのことだと思う
 	*/
-  Square castling_rook_square(CastlingRight cr) const;
+	Square castling_rook_square(CastlingRight cr) const;
 
-  // Checking
+	// Checking
 	/*
 	用途不明
 	StateInfoのメンバーcheckersBBを返してくる
 	*/
-  Bitboard checkers() const;
+	Bitboard checkers() const;
 	/*
 	用途不明
 	多分、kingへのチエックに関するなにか
 	*/
-  Bitboard discovered_check_candidates() const;
+	Bitboard discovered_check_candidates() const;
 	/*
 	用途不明
 	多分、kingへのチエックに関するなにか
 	*/
-  Bitboard pinned_pieces(Color c) const;
+	Bitboard pinned_pieces(Color c) const;
 
-  // Attacks to/from a given square
+	// Attacks to/from a given square
 	/*
 	用途不明
 	利き計算だとおもう
 	*/
-  Bitboard attackers_to(Square s) const;
-  Bitboard attackers_to(Square s, Bitboard occ) const;
-  Bitboard attacks_from(Piece pc, Square s) const;
-  template<PieceType> Bitboard attacks_from(Square s) const;
-  template<PieceType> Bitboard attacks_from(Square s, Color c) const;
+	Bitboard attackers_to(Square s) const;
+	Bitboard attackers_to(Square s, Bitboard occ) const;
+	Bitboard attacks_from(Piece pc, Square s) const;
+	template<PieceType> Bitboard attacks_from(Square s) const;
+	template<PieceType> Bitboard attacks_from(Square s, Color c) const;
 
-  // Properties of moves
+	// Properties of moves
 	/*
 	渡された手が合法手かチエックする
 	*/
-  bool legal(Move m, Bitboard pinned) const;
+	bool legal(Move m, Bitboard pinned) const;
 	/*
 	用途不明
 	*/
-  bool pseudo_legal(const Move m) const;
+	bool pseudo_legal(const Move m) const;
 	/*
 	着手が駒を取る手ならtrueを返す
 	*/
-  bool capture(Move m) const;
+	bool capture(Move m) const;
 	/*
 	用途不明
 	着手の種別をチエックしているが
@@ -264,37 +264,37 @@ public:
 	もしくは成る手を判定しているようだが
 	？
 	*/
-  bool capture_or_promotion(Move m) const;
+	bool capture_or_promotion(Move m) const;
 	/*
 	用途不明
 	合法手の判定？
 	*/
-  bool gives_check(Move m, const CheckInfo& ci) const;
+	bool gives_check(Move m, const CheckInfo& ci) const;
 	/*
 	用途不明
 	PAWNに関することのようであるが不明
 	*/
-  bool advanced_pawn_push(Move m) const;
+	bool advanced_pawn_push(Move m) const;
 	/*
 	着手データから駒コードを取得する
 	*/
-  Piece moved_piece(Move m) const;
+	Piece moved_piece(Move m) const;
 	/*
 	用途不明
 	取る駒種？
 	*/
-  PieceType captured_piece_type() const;
+	PieceType captured_piece_type() const;
 
-  // Piece specific
+	// Piece specific
 	/*
 	用途不明
 	*/
-  bool pawn_passed(Color c, Square s) const;
+	bool pawn_passed(Color c, Square s) const;
 	/*
 	PAWNが相手陣地の最下段にいるかチエック、いたら
 	trueを返す、PAWNが成るためのチエックに使用しているのかも？
 	*/
-  bool pawn_on_7th(Color c) const;
+	bool pawn_on_7th(Color c) const;
 	/*
 	用途不明
 	同じカラーのbishopが２個以上あって（つまりとられていない）
@@ -303,17 +303,17 @@ public:
 	trueが返ってくるのは当たり前のような気がするが、chess960では
 	違うのかも？
 	*/
-  bool bishop_pair(Color c) const;
+	bool bishop_pair(Color c) const;
 	/*
 	WHITE、BLACK側のbishopが互い違いのboardカラーに位置すれば
 	trueを返す
 	つまり違うboardカラーの場合お互いに取り合うことはないと
 	判断できる
 	*/
-  bool opposite_bishops() const;
+	bool opposite_bishops() const;
 
-  // Doing and undoing moves
-  /*
+	// Doing and undoing moves
+	/*
 	局面更新、詳細不明
 	ここからいろいろ引数を追加して下の
 	do_moveを呼んでいるラッパー
@@ -322,53 +322,53 @@ public:
 	/*
 	局面更新、詳細不明
 	*/
-  void do_move(Move m, StateInfo& st, const CheckInfo& ci, bool moveIsCheck);
+	void do_move(Move m, StateInfo& st, const CheckInfo& ci, bool moveIsCheck);
 	/*
 	局面復元、詳細不明
 	*/
-  void undo_move(Move m);
+	void undo_move(Move m);
 	/*
 	null moveを動かす,詳細不明
 	*/
-  void do_null_move(StateInfo& st);
+	void do_null_move(StateInfo& st);
 	/*
 	do_null_moveの復元
 	*/
-  void undo_null_move();
+	void undo_null_move();
 
-  // Static exchange evaluation
+	// Static exchange evaluation
 	/*
 	用途不明
 	SEEの名前からして静止探索？
 	*/
-  Value see(Move m) const;
+	Value see(Move m) const;
 	/*
 	用途不明
 	*/
-  Value see_sign(Move m) const;
+	Value see_sign(Move m) const;
 
-  // Accessing hash keys
+	// Accessing hash keys
 	/*
 	用途不明
 	StateInfoのメンバーkeyを返すだけ
 	*/
-  Key key() const;
+	Key key() const;
 	/*
 	用途不明
 	*/
-  Key exclusion_key() const;
+	Key exclusion_key() const;
 	/*
 	用途不明
 	StateInfoのメンバーpawnKeyを返すだけ
 	*/
-  Key pawn_key() const;
+	Key pawn_key() const;
 	/*
 	用途不明
 	StateInfoのメンバーmaterialKeyを返すだけ
 	*/
-  Key material_key() const;
+	Key material_key() const;
 
-  // Incremental piece-square evaluation
+	// Incremental piece-square evaluation
 	/*
 	用途不明
 	StateInfoのメンバーpsqを返す
@@ -378,96 +378,171 @@ public:
 	用途不明
 	StateInfoのメンバーnpMaterial
 	*/
-  Value non_pawn_material(Color c) const;
+	Value non_pawn_material(Color c) const;
 
-  // Other properties of the position
+	// Other properties of the position
 	/*
 	メンバー変数sideToMoveを返す
 	*/
-  Color side_to_move() const;
+	Color side_to_move() const;
 	/*
 	ゲームの何手目かを返す
 	*/
-  int game_ply() const;
+	int game_ply() const;
 	/*
 	チェス960（Chess 960）は、変則チェスの一種
 	chess960かどうかを返す
 	*/
-  bool is_chess960() const;
+	bool is_chess960() const;
 	/*
 	用途不明
 	メンバー変数thisThreadを返す
 	*/
-  Thread* this_thread() const;
+	Thread* this_thread() const;
 	/*
-	用途不明
-	メンバー変数nodesを返す
+	探索木のノード数を返す
 	*/
-  uint64_t nodes_searched() const;
+	uint64_t nodes_searched() const;
 	/*
-	用途不明
+	search関数で探索木を分割して探索した場合それぞれの部分木でのノード数を
+	合計するときに呼ばれる
 	*/
-  void set_nodes_searched(uint64_t n);
+	void set_nodes_searched(uint64_t n);
 	/*
 	用途不明
 	引き分けの判定をしている？
 	*/
-  bool is_draw() const;
+	bool is_draw() const;
 
-  // Position consistency check, for debugging
+	// Position consistency check, for debugging
 	/*
 	局面の不整合などをチエックしている
 	詳細不明なところもある
 	*/
-  bool pos_is_ok(int* step = NULL) const;
+	bool pos_is_ok(int* step = NULL) const;
 	/*
-	ここまで、position.cppにコメント入れ中
+	カラーを逆転したfen文字列を作ってpositionクラスを初期化する
 	*/
-  void flip();
+	void flip();
 
 private:
-  // Initialization helpers (used while setting up a position)
-  void clear();
-  void set_castling_right(Color c, Square rfrom);
-  void set_state(StateInfo* si) const;
+	// Initialization helpers (used while setting up a position)
+	/*
+	positionクラスをクリアにする
+	一部用途不明あり
+	*/
+	void clear();
+	/*
+	用途不明
+	*/
+	void set_castling_right(Color c, Square rfrom);
+	/*
+	Position::set関数から呼ばれており、Positionクラスの主要変数の初期化を
+	していると思われる。
+	用途不明
+	*/
+	void set_state(StateInfo* si) const;
 
-  // Helper functions
-  Bitboard check_blockers(Color c, Color kingColor) const;
-  void put_piece(Square s, Color c, PieceType pt);
-  void remove_piece(Square s, Color c, PieceType pt);
-  void move_piece(Square from, Square to, Color c, PieceType pt);
-  template<bool Do>
-  void do_castling(Square from, Square& to, Square& rfrom, Square& rto);
+	// Helper functions ヘルパー関数
+	/*
+	pin付けされた駒のbitboardを返す
+	*/
+	Bitboard check_blockers(Color c, Color kingColor) const;
+	/*
+	駒を置くことで局面の更新（移動ではない）
+	*/
+	void put_piece(Square s, Color c, PieceType pt);
+	/*
+	局面を復元するがboard[]だけは戻さない
+	do_move関数,undo_move関数,do_castling関数で使用される
+	*/
+	void remove_piece(Square s, Color c, PieceType pt);
+	/*
+	do_move,undo_move関数で使用される
+	駒を移動する更新をする
+	*/
+	void move_piece(Square from, Square to, Color c, PieceType pt);
+	/*
+	テンプレート関数,bool型でインスタンス化されている
+	キャスリング関係と思われるが用途不明
+	*/
+	template<bool Do>
+	void do_castling(Square from, Square& to, Square& rfrom, Square& rto);
 
-  // Board and pieces
-  Piece board[SQUARE_NB];
-  Bitboard byTypeBB[PIECE_TYPE_NB];
-  Bitboard byColorBB[COLOR_NB];
-  int pieceCount[COLOR_NB][PIECE_TYPE_NB];
-  Square pieceList[COLOR_NB][PIECE_TYPE_NB][16];
-  int index[SQUARE_NB];
+	// Board and pieces
+	/*
+	board関係の主要変数
+	*/
+	//Piece型の配列、６４個ある
+	Piece board[SQUARE_NB];
+	//駒種ごとのbitboard、駒種は６種類しかないが８個まで要素がある
+	Bitboard byTypeBB[PIECE_TYPE_NB];
+	//カラーごとのbitboard
+	Bitboard byColorBB[COLOR_NB];
+	//カラーごと、駒種ごとの駒数を記憶しておく配列
+	int pieceCount[COLOR_NB][PIECE_TYPE_NB];
+	//カラーごと、駒種ごと、どの座標にいるのか記憶しておく配列
+	Square pieceList[COLOR_NB][PIECE_TYPE_NB][16];
+	//用途不明
+	int index[SQUARE_NB];
 
-  // Other info
-  int castlingRightsMask[SQUARE_NB];
-  Square castlingRookSquare[CASTLING_RIGHT_NB];
-  Bitboard castlingPath[CASTLING_RIGHT_NB];
-  StateInfo startState;
-  uint64_t nodes;
-  int gamePly;
-  Color sideToMove;
-  Thread* thisThread;
-  StateInfo* st;
-  bool chess960;
+	// Other info
+	/*
+	キャスリング関係の変数かな
+	用途不明
+	*/
+	int castlingRightsMask[SQUARE_NB];
+	Square castlingRookSquare[CASTLING_RIGHT_NB];
+	Bitboard castlingPath[CASTLING_RIGHT_NB];
+	/*
+	用途不明
+	*/
+	StateInfo startState;
+	/*
+	do_moveを呼び出した回数
+	つまりsearchでのノード数
+	*/
+	uint64_t nodes;
+	/*
+	do_move関数で++されundo_moveで--されるので探索ではなくゲームの手数
+	*/
+	int gamePly;
+	/*
+	手番
+	*/
+	Color sideToMove;
+	/*
+	まだ、Thread関係には手がでないので保留
+	*/
+	Thread* thisThread;
+	/*
+	用途不明
+	*/
+	StateInfo* st;
+	/*
+	変則chess960かどうかのフラグ
+	*/
+	bool chess960;
 };
 
+/*
+searchのノード数を返す
+*/
 inline uint64_t Position::nodes_searched() const {
   return nodes;
 }
 
+/*
+search関数で探索木を分割して探索した場合それぞれの部分木でのノード数を
+合計するときに呼ばれる
+*/
 inline void Position::set_nodes_searched(uint64_t n) {
   nodes = n;
 }
 
+/*
+board配列の指定座標にある駒コードを返す
+*/
 inline Piece Position::piece_on(Square s) const {
   return board[s];
 }
@@ -479,70 +554,123 @@ inline Piece Position::moved_piece(Move m) const {
   return board[from_sq(m)];
 }
 
+/*
+board[]配列の指定した座標に駒がなければtrueを返す
+*/
 inline bool Position::empty(Square s) const {
   return board[s] == NO_PIECE;
 }
 
+/*
+手番を返す
+*/
 inline Color Position::side_to_move() const {
   return sideToMove;
 }
 
+/*
+全ての駒種のbitboardを返す
+*/
 inline Bitboard Position::pieces() const {
   return byTypeBB[ALL_PIECES];
 }
 
+/*
+駒種ごとのbitboardを返す
+全ての駒種のbitboardを返すにはALL_PIECES
+*/
 inline Bitboard Position::pieces(PieceType pt) const {
   return byTypeBB[pt];
 }
 
+/*
+pt1,pt2駒種のbitboardを返す
+*/
 inline Bitboard Position::pieces(PieceType pt1, PieceType pt2) const {
   return byTypeBB[pt1] | byTypeBB[pt2];
 }
 
+/*
+カラーごとのbitboardを返す
+*/
 inline Bitboard Position::pieces(Color c) const {
   return byColorBB[c];
 }
 
+/*
+カラーと駒種を指定したbitboardを返す
+*/
 inline Bitboard Position::pieces(Color c, PieceType pt) const {
   return byColorBB[c] & byTypeBB[pt];
 }
 
+/*
+指定したカラー、駒種pt1,pt2のbitboardを返す
+*/
 inline Bitboard Position::pieces(Color c, PieceType pt1, PieceType pt2) const {
   return byColorBB[c] & (byTypeBB[pt1] | byTypeBB[pt2]);
 }
 
+/*
+指定したカラー、駒種の数を返す
+*/
 template<PieceType Pt> inline int Position::count(Color c) const {
   return pieceCount[c][Pt];
 }
 
+/*
+指定したカラー、駒種の座標リストを返す
+*/
 template<PieceType Pt> inline const Square* Position::list(Color c) const {
   return pieceList[c][Pt];
 }
 
+/*
+用途不明
+*/
 inline Square Position::ep_square() const {
   return st->epSquare;
 }
 
+/*
+指定したカラーのKINGの座標を返す
+*/
 inline Square Position::king_square(Color c) const {
   return pieceList[c][KING][0];
 }
 
+/*
+用途不明
+*/
 inline int Position::can_castle(CastlingRight cr) const {
   return st->castlingRights & cr;
 }
 
+/*
+用途不明
+*/
 inline int Position::can_castle(Color c) const {
   return st->castlingRights & ((WHITE_OO | WHITE_OOO) << (2 * c));
 }
 
+/*
+用途不明
+*/
 inline bool Position::castling_impeded(CastlingRight cr) const {
   return byTypeBB[ALL_PIECES] & castlingPath[cr];
 }
 
+/*
+用途不明
+*/
 inline Square Position::castling_rook_square(CastlingRight cr) const {
   return castlingRookSquare[cr];
 }
 
+/*
+座標に利いているbitboardを返す（駒種を指定できる、指定していなかったら
+非飛び駒の利きを返す）
+*/
 template<PieceType Pt>
 inline Bitboard Position::attacks_from(Square s) const {
 
@@ -553,24 +681,38 @@ inline Bitboard Position::attacks_from(Square s) const {
 
 /*
 指定した座標に利いている駒のbitboardを返す
+テンプレートでPAWN専用にしている
+template<>になっているのはPAWNを指定しているから
 */
 template<>
 inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
   return StepAttacksBB[make_piece(c, PAWN)][s];
 }
 
+/*
+指定した座標に利いている駒のbitboardを返す
+*/
 inline Bitboard Position::attacks_from(Piece pc, Square s) const {
   return attacks_bb(pc, s, byTypeBB[ALL_PIECES]);
 }
 
+/*
+指定した座標に利いている駒のbitboardを返す、カラーは無関係
+*/
 inline Bitboard Position::attackers_to(Square s) const {
   return attackers_to(s, byTypeBB[ALL_PIECES]);
 }
 
+/*
+用途不明
+*/
 inline Bitboard Position::checkers() const {
   return st->checkersBB;
 }
 
+/*
+
+*/
 inline Bitboard Position::discovered_check_candidates() const {
   return check_blockers(sideToMove, ~sideToMove);
 }
@@ -629,7 +771,6 @@ inline bool Position::opposite_bishops() const {
 }
 
 /*
-用途不明
 同じカラーのbishopが２個以上あって（つまりとられていない）
 boardのカラー（市松模様の色）が異なっていればtrue
 ただ味方同士のbishopは互いに異なるboardカラーに配置されるので

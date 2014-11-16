@@ -177,7 +177,10 @@ Position& Position::operator=(const Position& pos) {
 
 /// Position::clear() erases the position object to a pristine state, with an
 /// empty board, white to move, and no castling rights.
-
+/*
+positionクラスをクリアにする、
+startStateは用途不明
+*/
 void Position::clear() {
 
   std::memset(this, 0, sizeof(Position));
@@ -312,7 +315,10 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
 
 /// Position::set_castling_right() is a helper function used to set castling
 /// rights given the corresponding color and the rook starting square.
-
+/*
+多分キャスリングに関するなにか
+用途不明
+*/
 void Position::set_castling_right(Color c, Square rfrom) {
 
   Square kfrom = king_square(c);
@@ -342,6 +348,11 @@ void Position::set_castling_right(Color c, Square rfrom) {
 /// The function is only used when a new position is set up, and to verify
 /// the correctness of the StateInfo data when running in debug mode.
 
+/*
+Position::set関数から呼ばれており、Positionクラスの主要変数の初期化を
+していると思われる。
+用途不明
+*/
 void Position::set_state(StateInfo* si) const {
 
   si->key = si->pawnKey = si->materialKey = 0;
@@ -475,19 +486,30 @@ const string Position::pretty(Move m) const {
 /// pinned or a discovered check piece, according if its color 'c' is the same
 /// or the opposite of 'kingColor'.
 
+/*
+pop_lsbはなにか
+	LSB（最下位bit）からスキャンして1が立っているindexを返す
+	indexは0から始まる
+pin付けされた駒のbitboardを返す
+*/
 Bitboard Position::check_blockers(Color c, Color kingColor) const {
 
   Bitboard b, pinners, result = 0;
   Square ksq = king_square(kingColor);
 
   // Pinners are sliders that give check when a pinned piece is removed
+  /*
+  KINGに影の利きをしている敵陣側ROOK,BISHOP,QUEENのbitboardをpinnersに入れている
+  */
   pinners = (  (pieces(  ROOK, QUEEN) & PseudoAttacks[ROOK  ][ksq])
              | (pieces(BISHOP, QUEEN) & PseudoAttacks[BISHOP][ksq])) & pieces(~kingColor);
 
   while (pinners)
   {
       b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
-
+	  //bが１bitしかなかったら（つまり飛び駒とKINGの間にある駒（味方、敵関係なく）が
+	  //１枚しかなかったら飛び駒の利きをブロックしている駒として登録して返す
+	  //どちらのカラーの駒かは引数Color cで決まる
       if (!more_than_one(b))
           result |= b & pieces(c);
   }
@@ -1178,12 +1200,18 @@ std::transform(start,end,result,func)
 	startからendまでの範囲に関数funcを適用してresultに結果を返す
 	関数toggle_caseは文字（文字列ではない）を受け取りそれが小文字なら
 	大文字にして返す、大文字だったら小文字にして返す
-	ここまで
 */
 void Position::flip() {
 
   string f, token;
   std::stringstream ss(fen());
+
+	/*
+	fen文字列を逆にしている
+	rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNRが入ってくる文字
+	fには"RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr "
+	と反対に構築する
+	*/
 
   for (Rank r = RANK_8; r >= RANK_1; --r) // Piece placement
   {
@@ -1198,7 +1226,10 @@ void Position::flip() {
 
   ss >> token; // Castling availability
   f += token + " ";
-
+	/*
+	大文字を小文字に、小文字を大文字に変換
+	つまりWHITEをBLACKにBLACKをWHITEにする
+	*/
   std::transform(f.begin(), f.end(), f.begin(), toggle_case);
 
   ss >> token; // En passant square

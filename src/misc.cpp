@@ -117,7 +117,8 @@ class Logger {
   Tie in, out;
 
 public:
-  static void start(bool b) {
+  static void start(bool b) 
+  {
 
     static Logger l;
 
@@ -155,7 +156,10 @@ std::ostream& operator<<(std::ostream& os, SyncCout sc) {
 
 
 /// Trampoline helper to avoid moving Logger to misc.h
-void start_logger(bool b) { Logger::start(b); }
+void start_logger(bool b) 
+{ 
+    Logger::start(b); 
+}
 
 
 /// timed_wait() waits for msec milliseconds. It is mainly a helper to wrap
