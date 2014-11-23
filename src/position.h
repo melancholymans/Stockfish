@@ -711,16 +711,23 @@ inline Bitboard Position::checkers() const {
 }
 
 /*
-
+敵のKINGにpin付けしている駒のbitboardを返す
 */
 inline Bitboard Position::discovered_check_candidates() const {
   return check_blockers(sideToMove, ~sideToMove);
 }
 
+/*
+自陣サイドのpinつけされている駒のbitboardを返す
+*/
 inline Bitboard Position::pinned_pieces(Color c) const {
   return check_blockers(c, c);
 }
 
+/*
+passed_pawn_mask関数は？
+
+*/
 inline bool Position::pawn_passed(Color c, Square s) const {
   return !(pieces(~c, PAWN) & passed_pawn_mask(c, s));
 }

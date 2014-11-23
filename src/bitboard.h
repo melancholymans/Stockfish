@@ -26,17 +26,44 @@
 namespace Bitboards {
 
 void init();
+/*bitboardを表形式で表示
+*/
 const std::string pretty(Bitboard b);
 
 }
 
 namespace Bitbases {
-
+/*用途不明
+*/
 void init_kpk();
+/*用途不明
+*/
 bool probe_kpk(Square wksq, Square wpsq, Square bksq, Color us);
 
 }
 
+/*
+FileABB=
+1000 0000 
+1000 0000 
+1000 0000 
+1000 0000 
+1000 0000 
+1000 0000 
+1000 0000 
+1000 0000
+
+FileBBB=
+0100 0000
+0100 0000
+0100 0000
+0100 0000
+0100 0000
+0100 0000
+0100 0000
+0100 0000
+以下同じ
+*/
 const Bitboard FileABB = 0x0101010101010101ULL;
 const Bitboard FileBBB = FileABB << 1;
 const Bitboard FileCBB = FileABB << 2;
@@ -45,7 +72,18 @@ const Bitboard FileEBB = FileABB << 4;
 const Bitboard FileFBB = FileABB << 5;
 const Bitboard FileGBB = FileABB << 6;
 const Bitboard FileHBB = FileABB << 7;
-
+/*
+Rank1BB=
+1111 1111
+0000 0000
+0000 0000
+0000 0000
+0000 0000
+0000 0000
+0000 0000
+0000 0000
+pretty関数で表示させると上下反対に表示されるが内部表現はこうなっている
+*/
 const Bitboard Rank1BB = 0xFF;
 const Bitboard Rank2BB = Rank1BB << (8 * 1);
 const Bitboard Rank3BB = Rank1BB << (8 * 2);
@@ -83,15 +121,24 @@ extern Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 
 extern int SquareDistance[SQUARE_NB][SQUARE_NB];
 
+/*用途不明
+*/
 const Bitboard DarkSquares = 0xAA55AA55AA55AA55ULL;
 
 /// Overloads of bitwise operators between a Bitboard and a Square for testing
 /// whether a given bit is set in a bitboard, and for setting and clearing bits.
-
+/*
+bitboardとsqの&演算子を定義してある
+引数のbbと座標が重なっているbitboardを返す
+*/
 inline Bitboard operator&(Bitboard b, Square s) {
   return b & SquareBB[s];
 }
 
+/*
+bitboardとsqの|=演算子を定義してある
+
+*/
 inline Bitboard& operator|=(Bitboard& b, Square s) {
   return b |= SquareBB[s];
 }

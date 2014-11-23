@@ -70,7 +70,8 @@ namespace {
 
 } // namespace
 
-
+/*—p“r•s–¾
+*/
 bool Bitbases::probe_kpk(Square wksq, Square wpsq, Square bksq, Color us) {
 
   assert(file_of(wpsq) <= FILE_D);
@@ -79,7 +80,8 @@ bool Bitbases::probe_kpk(Square wksq, Square wpsq, Square bksq, Color us) {
   return KPKBitbase[idx / 32] & (1 << (idx & 0x1F));
 }
 
-
+/*—p“r•s–¾
+*/
 void Bitbases::init_kpk() {
 
   unsigned idx, repeat = 1;
