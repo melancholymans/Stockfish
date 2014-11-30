@@ -726,33 +726,53 @@ inline Bitboard Position::pinned_pieces(Color c) const {
 
 /*
 passed_pawn_mask関数は？
-
+指定した座標にいるPAWNが移動可能な範囲の中に敵側のPAWNとのAND
+なのでこれから取ることが可能なPAWNのbitboardを返す
 */
 inline bool Position::pawn_passed(Color c, Square s) const {
   return !(pieces(~c, PAWN) & passed_pawn_mask(c, s));
 }
 
+/*
+着手データの駒種がPAWNでかつ行がRank_4以上だったらtrueを返す
+用途不明
+*/
 inline bool Position::advanced_pawn_push(Move m) const {
   return   type_of(moved_piece(m)) == PAWN
         && relative_rank(sideToMove, from_sq(m)) > RANK_4;
 }
 
+/*
+用途不明
+*/
 inline Key Position::key() const {
   return st->key;
 }
 
+/*
+用途不明
+*/
 inline Key Position::pawn_key() const {
   return st->pawnKey;
 }
 
+/*
+用途不明
+*/
 inline Key Position::material_key() const {
   return st->materialKey;
 }
 
+/*
+用途不明
+*/
 inline Score Position::psq_score() const {
   return st->psq;
 }
 
+/*
+用途不明
+*/
 inline Value Position::non_pawn_material(Color c) const {
   return st->npMaterial[c];
 }
@@ -790,20 +810,34 @@ inline bool Position::bishop_pair(Color c) const {
         && opposite_colors(pieceList[c][BISHOP][0], pieceList[c][BISHOP][1]);
 }
 
+/*
+PAWNがRANK_7にいるbitboard(BLACKにとってはRank_2）
+つまり次の１手でQUEENになれる候補ということ
+*/
 inline bool Position::pawn_on_7th(Color c) const {
   return pieces(c, PAWN) & rank_bb(relative_rank(c, RANK_7));
 }
 
+/*
+変形chess960かどうかを返す
+*/
 inline bool Position::is_chess960() const {
   return chess960;
 }
 
+/*
+通常の動き＋駒をとる動作ならtrue
+promoto＋アンパッサンならtrue（関数の名前からpromotoを検出しているようだが両方検出している、バグ）
+*/
 inline bool Position::capture_or_promotion(Move m) const {
 
   assert(is_ok(m));
   return type_of(m) != NORMAL ? type_of(m) != CASTLING : !empty(to_sq(m));
 }
 
+/*
+単純に駒を取る手＋アンパッサンならtrue　
+*/
 inline bool Position::capture(Move m) const {
 
   // Note that castling is encoded as "king captures the rook"
@@ -811,14 +845,24 @@ inline bool Position::capture(Move m) const {
   return (!empty(to_sq(m)) && type_of(m) != CASTLING) || type_of(m) == ENPASSANT;
 }
 
+/*
+用途不明
+*/
 inline PieceType Position::captured_piece_type() const {
   return st->capturedType;
 }
 
+/*
+用途不明
+*/
 inline Thread* Position::this_thread() const {
   return thisThread;
 }
 
+/*
+駒を置くことによって生じるbitboardの更新
+駒の移動ではないの初期の駒配置などで使用
+*/
 inline void Position::put_piece(Square s, Color c, PieceType pt) {
 
   board[s] = make_piece(c, pt);
@@ -829,6 +873,9 @@ inline void Position::put_piece(Square s, Color c, PieceType pt) {
   pieceList[c][pt][index[s]] = s;
 }
 
+/*
+駒の移動による局面(bitboardなど）の更新
+*/
 inline void Position::move_piece(Square from, Square to, Color c, PieceType pt) {
 
   // index[from] is not updated and becomes stale. This works as long
@@ -843,6 +890,9 @@ inline void Position::move_piece(Square from, Square to, Color c, PieceType pt) 
   pieceList[c][pt][index[to]] = to;
 }
 
+/*
+局面の更新であるが用途不明
+*/
 inline void Position::remove_piece(Square s, Color c, PieceType pt) {
 
   // WARNING: This is not a reversible operation. If we remove a piece in
