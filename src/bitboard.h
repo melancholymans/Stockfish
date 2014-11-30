@@ -198,7 +198,15 @@ inline int rank_distance(Square s1, Square s2) {
 
 
 /// shift_bb() moves bitboard one step along direction Delta. Mainly for pawns.
-
+/*
+テンプレートになっている
+通常のテンプレート定義なら<typename T>とか<class T>なのに<Square Delta>となっている
+明示化でもない
+C++テンプレートテクニックpage28にあるテンプレート引数に整数値を渡すである
+使い方は
+shift_bb<Up>(b)のように呼び出すとUpはDELTA_N（手番がWHITEのとき）を渡すことになる
+用途不明
+*/
 template<Square Delta>
 inline Bitboard shift_bb(Bitboard b) {
 
@@ -211,19 +219,29 @@ inline Bitboard shift_bb(Bitboard b) {
 
 /// rank_bb() and file_bb() take a file or a square as input and return
 /// a bitboard representing all squares on the given file or rank.
-
+/*
+Rank1(=0)からRank8(=7)で指定したRankBBを返す
+*/
 inline Bitboard rank_bb(Rank r) {
   return RankBB[r];
 }
 
+/*
+座標値を指定してその座標が所属する行のRankBBを返す
+*/
 inline Bitboard rank_bb(Square s) {
   return RankBB[rank_of(s)];
 }
-
+/*
+列番号で指定したbitBoardを返す
+*/
 inline Bitboard file_bb(File f) {
   return FileBB[f];
 }
 
+/*
+座標値を指定してその座標が所属する列のFileBBを返す
+*/
 inline Bitboard file_bb(Square s) {
   return FileBB[file_of(s)];
 }
@@ -231,7 +249,9 @@ inline Bitboard file_bb(Square s) {
 
 /// adjacent_files_bb() takes a file as input and returns a bitboard representing
 /// all squares on the adjacent files.
-
+/*
+指定した列の隣の列が立っているbitboardを返す
+*/
 inline Bitboard adjacent_files_bb(File f) {
   return AdjacentFilesBB[f];
 }
@@ -241,7 +261,10 @@ inline Bitboard adjacent_files_bb(File f) {
 /// representing all the squares on all ranks in front of the rank, from the
 /// given color's point of view. For instance, in_front_bb(BLACK, RANK_3) will
 /// give all squares on ranks 1 and 2.
-
+/*
+指定した行から敵側（どっちが敵側かは指定したカラーで判断）が
+立っているbitboard
+*/
 inline Bitboard in_front_bb(Color c, Rank r) {
   return InFrontBB[c][r];
 }
@@ -251,7 +274,10 @@ inline Bitboard in_front_bb(Color c, Rank r) {
 /// For instance, between_bb(SQ_C4, SQ_F7) returns a bitboard with the bits for
 /// square d5 and e6 set.  If s1 and s2 are not on the same rank, file or diagonal,
 /// 0 is returned.
-
+/*
+指定した座標間でそこにRook,Bishopの利きが存在すればその利きbitboardを返す
+指定した座標はbitboardには含まれない
+*/
 inline Bitboard between_bb(Square s1, Square s2) {
   return BetweenBB[s1][s2];
 }
@@ -261,7 +287,10 @@ inline Bitboard between_bb(Square s1, Square s2) {
 /// representing all squares along the line in front of the square, from the
 /// point of view of the given color. Definition of the table is:
 /// ForwardBB[c][s] = in_front_bb(c, s) & file_bb(s)
-
+/*
+指定した座標より前方のbitboardを返す
+カラーによって前方の方向が変わる
+*/
 inline Bitboard forward_bb(Color c, Square s) {
   return ForwardBB[c][s];
 }
@@ -271,7 +300,10 @@ inline Bitboard forward_bb(Color c, Square s) {
 /// representing all squares that can be attacked by a pawn of the given color
 /// when it moves along its file starting from the given square. Definition is:
 /// PawnAttackSpan[c][s] = in_front_bb(c, s) & adjacent_files_bb(s);
-
+/*
+PAWNが駒を取れる位置のbitboardを返す
+カラーによって方向が異なる
+*/
 inline Bitboard pawn_attack_span(Color c, Square s) {
   return PawnAttackSpan[c][s];
 }
@@ -281,7 +313,10 @@ inline Bitboard pawn_attack_span(Color c, Square s) {
 /// bitboard mask which can be used to test if a pawn of the given color on
 /// the given square is a passed pawn. Definition of the table is:
 /// PassedPawnMask[c][s] = pawn_attack_span(c, s) | forward_bb(c, s)
-
+/*
+名前にPawnが入っていることから想定して
+Pawnが前進または駒をとるbitboardを返す
+*/
 inline Bitboard passed_pawn_mask(Color c, Square s) {
   return PassedPawnMask[c][s];
 }
@@ -289,7 +324,9 @@ inline Bitboard passed_pawn_mask(Color c, Square s) {
 
 /// squares_of_color() returns a bitboard representing all squares with the same
 /// color of the given square.
-
+/*
+用途不明
+*/
 inline Bitboard squares_of_color(Square s) {
   return DarkSquares & s ? DarkSquares : ~DarkSquares;
 }
@@ -297,7 +334,10 @@ inline Bitboard squares_of_color(Square s) {
 
 /// aligned() returns true if the squares s1, s2 and s3 are aligned
 /// either on a straight or on a diagonal line.
-
+/*
+座標s1,s2の間のRook またはBishopの利きbitboardと　座標s3の
+bitboardとのANDなのでs3がs1とs2の間の利きを遮断しているかの判断ができる
+*/
 inline bool aligned(Square s1, Square s2, Square s3) {
   return LineBB[s1][s2] & s3;
 }
@@ -306,12 +346,19 @@ inline bool aligned(Square s1, Square s2, Square s3) {
 /// Functions for computing sliding attack bitboards. Function attacks_bb() takes
 /// a square and a bitboard of occupied squares as input, and returns a bitboard
 /// representing all squares attacked by Pt (bishop or rook) on the given square.
+/*
+テンプレート関数でpiece typeを指定できる
+インスタンス化は
+magic_index<ROOK>
+magic_index<BISHOP>
+の２つのみ
+*/
 template<PieceType Pt>
 FORCE_INLINE unsigned magic_index(Square s, Bitboard occ) {
 
   Bitboard* const Masks  = Pt == ROOK ? RMasks  : BMasks;
   Bitboard* const Magics = Pt == ROOK ? RMagics : BMagics;
-  unsigned* const Shifts = Pt == ROOK ? RShifts : BShifts;
+  unsigned* const Shifts = Pt == ROOK ? RShifts : BShifts;	//条件演算子を使う意味がないような
 
   if (HasPext)
       return unsigned(_pext_u64(occ, Masks[s]));
@@ -375,6 +422,12 @@ inline Bitboard attacks_bb(Square s, Bitboard occ) {
   return (Pt == ROOK ? RAttacks : BAttacks)[s][magic_index<Pt>(s, occ)];
 }
 
+/*
+ひとつ上のattacks_bb関数のオーバーロード
+引数のpcでインスタンス化している
+上のattacks_bbは飛び駒専用の関数であるがこの関数は
+非飛び駒にも対応している
+*/
 inline Bitboard attacks_bb(Piece pc, Square s, Bitboard occ) {
 
   switch (type_of(pc))
@@ -452,7 +505,10 @@ extern Square pop_lsb(Bitboard* b);
 
 /// frontmost_sq() and backmost_sq() find the square corresponding to the
 /// most/least advanced bit relative to the given color.
-
+/*
+ｍｓｂは最上位bit,LSBは最下位bit
+用途不明
+*/
 inline Square frontmost_sq(Color c, Bitboard b) { return c == WHITE ? msb(b) : lsb(b); }
 inline Square  backmost_sq(Color c, Bitboard b) { return c == WHITE ? lsb(b) : msb(b); }
 
