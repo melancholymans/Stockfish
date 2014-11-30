@@ -137,20 +137,32 @@ inline Bitboard operator&(Bitboard b, Square s) {
 
 /*
 bitboardとsqの|=演算子を定義してある
-
+引数のbbに座標のbitを追加したbitboardを返す
 */
 inline Bitboard& operator|=(Bitboard& b, Square s) {
   return b |= SquareBB[s];
 }
 
+/*
+bitboardとsqの^=演算子を定義してある
+引数のbbに座標のbitとの排他演算した結果のbitboardを返す
+*/
 inline Bitboard& operator^=(Bitboard& b, Square s) {
   return b ^= SquareBB[s];
 }
 
+/*
+bitboardとsqの｜演算子を定義してある
+引数のbbに座標のbitとのOR演算した結果のbitboardを返す
+*/
 inline Bitboard operator|(Bitboard b, Square s) {
   return b | SquareBB[s];
 }
 
+/*
+bitboardとsqの^演算子を定義してある
+引数のbbに座標のbitとの排他演算した結果のbitboardを返す
+*/
 inline Bitboard operator^(Bitboard b, Square s) {
   return b ^ SquareBB[s];
 }
@@ -163,14 +175,23 @@ inline bool more_than_one(Bitboard b) {
   return b & (b - 1);
 }
 
+/*
+座標s1,s2の距離を返す、行と列の距離の内大きいほうを返す
+*/
 inline int square_distance(Square s1, Square s2) {
   return SquareDistance[s1][s2];
 }
 
+/*
+列の距離を返す
+*/
 inline int file_distance(Square s1, Square s2) {
   return abs(file_of(s1) - file_of(s2));
 }
 
+/*
+行間の距離を返す
+*/
 inline int rank_distance(Square s1, Square s2) {
   return abs(rank_of(s1) - rank_of(s2));
 }
