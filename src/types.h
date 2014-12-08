@@ -654,6 +654,7 @@ inline Rank relative_rank(Color c, Rank r) {
 
 /*
 上と一緒だが引数に座標値を使う
+行番号を入れ替える、カラーがWHITEのときはそのまま
 */
 inline Rank relative_rank(Color c, Square s) {
   return relative_rank(c, rank_of(s));
@@ -717,12 +718,15 @@ inline Square pawn_push(Color c) {
   return c == WHITE ? DELTA_N : DELTA_S;
 }
 
+/*
+着手データ構造から移動元座標値を取り出す
+*/
 inline Square from_sq(Move m) {
   return Square((m >> 6) & 0x3F);
 }
 
 /*
-着手データ構造から座標値を取り出す
+着手データ構造から移動先座標値を取り出す
 */
 inline Square to_sq(Move m) {
   return Square(m & 0x3F);
