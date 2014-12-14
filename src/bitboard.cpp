@@ -41,6 +41,10 @@ Bitboard FileBB[FILE_NB];
 Bitboard RankBB[RANK_NB];
 Bitboard AdjacentFilesBB[FILE_NB];
 Bitboard InFrontBB[COLOR_NB][RANK_NB];
+/*
+非飛び駒（bishop,rook,queenを除く駒）が駒をとれる位置に
+ビットが立ったbitboardの配列
+*/
 Bitboard StepAttacksBB[PIECE_NB][SQUARE_NB];
 Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
 Bitboard LineBB[SQUARE_NB][SQUARE_NB];
@@ -48,6 +52,10 @@ Bitboard DistanceRingsBB[SQUARE_NB][8];
 Bitboard ForwardBB[COLOR_NB][SQUARE_NB];
 Bitboard PassedPawnMask[COLOR_NB][SQUARE_NB];
 Bitboard PawnAttackSpan[COLOR_NB][SQUARE_NB];
+/*
+ROOK,BISHOP,QUEENの座標ごとの利きを入れておく
+他に駒がない状態の時の利き
+*/
 Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 
 int SquareDistance[SQUARE_NB][SQUARE_NB];
@@ -181,16 +189,93 @@ void Bitboards::init() {
 
   for (Bitboard b = 1; b < 256; ++b)
       MS1BTable[b] = more_than_one(b) ? MS1BTable[b - 1] : lsb(b);
-
+  /*
+  FILE_A
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+  */
   for (File f = FILE_A; f <= FILE_H; ++f)
       FileBB[f] = f > FILE_A ? FileBB[f - 1] << 1 : FileABB;
-
+  /*
+  RANK1
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  */
   for (Rank r = RANK_1; r <= RANK_8; ++r)
       RankBB[r] = r > RANK_1 ? RankBB[r - 1] << 8 : Rank1BB;
-
+  /*
+  FILE_B
+  隣の列のbitboardを返す
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  | X |   | X |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+  */
   for (File f = FILE_A; f <= FILE_H; ++f)
       AdjacentFilesBB[f] = (f > FILE_A ? FileBB[f - 1] : 0) | (f < FILE_H ? FileBB[f + 1] : 0);
-
+  /*
+  InFrontBB[WHITE][RANK_2]
+  この絵は下側がWHITEでRANK_2は下から２番目の行となっている
+  つまりInFrontBBは指定した行から敵陣側のbitboardを返す
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  | X | X | X | X | X | X | X | X |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  |   |   |   |   |   |   |   |   |
+  +---+---+---+---+---+---+---+---+
+  */
   for (Rank r = RANK_1; r < RANK_8; ++r)
       InFrontBB[WHITE][r] = ~(InFrontBB[BLACK][r + 1] = InFrontBB[BLACK][r] | RankBB[r]);
   /*
