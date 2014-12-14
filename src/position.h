@@ -33,16 +33,19 @@ class Position;
 struct Thread;
 
 /*
-用途不明
+checkに役立つbitboardを返す
+pinnedはpinつけされた駒bitboardを返す
+dcCandidatesは敵KINGへの利きを邪魔している自陣駒bitboardを返す
+checkSq[]は敵KINGへ利きを利かしている自陣駒bitboardを返す
 */
 struct CheckInfo {
 
 	explicit CheckInfo(const Position&);
 
-	Bitboard dcCandidates;
-	Bitboard pinned;
+	Bitboard dcCandidates;	//敵KINGにoin付けされた自陣駒bitboard つまり敵KINGへの利きを邪魔している自陣駒のこと
+	Bitboard pinned;		//自陣KINGにpinつけされた自陣駒bitboard
 	Bitboard checkSq[PIECE_TYPE_NB];
-	Square ksq;
+	Square ksq;				//敵KINGの座標
 };
 
 
@@ -52,7 +55,6 @@ struct CheckInfo {
 /// object must be passed as a parameter.
 
 /*
-用途不明
 （追記）
 positionは局面を保持するクラスで、do_moveによって
 変更を加えられるが（局面更新）もとの局面に戻す時に
@@ -133,8 +135,6 @@ public:
 
 	// Position representation
 	/*
-	用途不明
-	（追記）
 	全ての駒のビットがたったbitboardを返す
 	関数の宣言のあとについているconstはこの
 	positionクラスのメンバー変数は変更できない
@@ -223,9 +223,10 @@ public:
 	*/
 	Bitboard checkers() const;
 	/*
-	用途不明
-	多分、kingへのチエックに関するなにか
-	*/
+	Colorに自陣カラー kingColorに敵陣カラーを指定すれば
+	敵KINGに釘付けされた駒（自陣側の駒、敵陣の駒ではない）を返す
+	但しpinされた駒は１つだけで２つ挟まっているとpinとは判断されない
+	つまり敵のKINGへの利きを邪魔している自陣側の駒を返す	*/
 	Bitboard discovered_check_candidates() const;
 	/*
 	用途不明
@@ -373,7 +374,7 @@ public:
 	用途不明
 	StateInfoのメンバーpsqを返す
 	*/
-  Score psq_score() const;
+	Score psq_score() const;
 	/*
 	用途不明
 	StateInfoのメンバーnpMaterial
@@ -668,7 +669,8 @@ inline Square Position::castling_rook_square(CastlingRight cr) const {
 }
 
 /*
-座標に利いているbitboardを返す（駒種を指定できる、指定していなかったら
+指定した座標に指定した駒種（テンプレート引数で指定）の利きbitboard
+利いているbitboardを返す（駒種を指定できる、指定していなかったら
 非飛び駒の利きを返す）
 */
 template<PieceType Pt>
@@ -690,7 +692,9 @@ inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
 }
 
 /*
-指定した座標に利いている駒のbitboardを返す
+指定した駒が指定した座標にいる場合の利きのbitboardを返す
+つまりfromは指定した座標から(from）利いている（attacks)という意味
+反対にattackers_toは指定した座標toに来ている(to)利きを出している
 */
 inline Bitboard Position::attacks_from(Piece pc, Square s) const {
   return attacks_bb(pc, s, byTypeBB[ALL_PIECES]);
@@ -704,14 +708,20 @@ inline Bitboard Position::attackers_to(Square s) const {
 }
 
 /*
-用途不明
+checkersBBは自陣のKINGに王手Checkを掛けている駒のbitboard
+そのbitboardを返す
+checkersBBは局面クラスが生成された時、set_state関数で最初の初期化をする
+その後はdo_move関数で更新する
 */
 inline Bitboard Position::checkers() const {
   return st->checkersBB;
 }
 
 /*
-敵のKINGにpin付けしている駒のbitboardを返す
+Colorに自陣カラー kingColorに敵陣カラーを指定すれば
+敵KINGに釘付けされた駒（自陣側の駒、敵陣の駒ではない）を返す
+但しpinされた駒は１つだけで２つ挟まっているとpinとは判断されない
+つまり敵のKINGへの利きを邪魔している自陣側の駒を返す
 */
 inline Bitboard Position::discovered_check_candidates() const {
   return check_blockers(sideToMove, ~sideToMove);

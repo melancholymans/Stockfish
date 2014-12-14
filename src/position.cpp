@@ -44,6 +44,11 @@ Value PieceValue[PHASE_NB][PIECE_NB] = {
 
 static Score psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
 
+/*
+chessなどの局面の状態を１つのハッシュ値で代表させる方法
+参考HP:http://hackemdown.blogspot.jp/2014/06/zobrist-hashing.html
+初期化しているのはPosition::init()関数内
+*/
 namespace Zobrist {
 
   Key psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
@@ -53,11 +58,17 @@ namespace Zobrist {
   Key exclusion;
 }
 
-Key Position::exclusion_key() const 
+/*
+用途不明
+*/
+Key Position::exclusion_key() const
 { 
 	return st->key ^ Zobrist::exclusion;
 }
 
+/*
+用途不明
+*/
 namespace {
 
 // min_attacker() is a helper function used by see() to locate the least
@@ -84,6 +95,9 @@ PieceType min_attacker(const Bitboard* bb, const Square& to, const Bitboard& stm
   return (PieceType)Pt;
 }
 
+/*
+テンプレート関数（KINGの明示化）
+*/
 template<> FORCE_INLINE
 PieceType min_attacker<KING>(const Bitboard*, const Square&, const Bitboard&, Bitboard&, Bitboard&) {
   return KING; // No need to update bitboards: it is the last cycle
@@ -93,14 +107,18 @@ PieceType min_attacker<KING>(const Bitboard*, const Square&, const Bitboard&, Bi
 
 
 /// CheckInfo c'tor
-
+/*
+このCheckInfoクラスはコンストラクタしかない
+局面クラスpositionを受け取って現局面で王手をかけている駒種ごとのbitboard（もちろんチエックがかかっていない場合は0）
+敵KINGに対してpin付けされている駒のbitboardを返す
+*/
 CheckInfo::CheckInfo(const Position& pos) {
 
   Color them = ~pos.side_to_move();
   ksq = pos.king_square(them);
 
-  pinned = pos.pinned_pieces(pos.side_to_move());
-  dcCandidates = pos.discovered_check_candidates();
+  pinned = pos.pinned_pieces(pos.side_to_move());	
+  dcCandidates = pos.discovered_check_candidates();	//dcCandidatesは相手のKINGへの利きの邪魔になっている自陣側の駒bitboardを返す
 
   checkSq[PAWN]   = pos.attacks_from<PAWN>(ksq, them);
   checkSq[KNIGHT] = pos.attacks_from<KNIGHT>(ksq);
@@ -116,19 +134,32 @@ CheckInfo::CheckInfo(const Position& pos) {
 /// Firstly, the white halves of the tables are copied from PSQT[] tables.
 /// Secondly, the black halves of the tables are initialized by flipping and
 /// changing the sign of the white scores.
-
+/*
+用途不明なZobristを初期化している
+そのあと評価値（駒評価値と位置評価値）を初期している
+*/
 void Position::init() {
 
   RKISS rk;
 
+  /*
+  升目、駒種ごとに乱数をあらかじめ設定しておき
+  局面の状態に応じて１意のハッシュ値（異局面で同一のハッシュ値がでる可能性はある）
+  */
   for (Color c = WHITE; c <= BLACK; ++c)
       for (PieceType pt = PAWN; pt <= KING; ++pt)
           for (Square s = SQ_A1; s <= SQ_H8; ++s)
               Zobrist::psq[c][pt][s] = rk.rand<Key>();
-
+  /*
+  アンパッサンのハッシュ値？
+  用途不明
+  */
   for (File f = FILE_A; f <= FILE_H; ++f)
       Zobrist::enpassant[f] = rk.rand<Key>();
-
+  /*
+  キャスリングのハッシュ値？
+  用途不明
+  */
   for (int cf = NO_CASTLING; cf <= ANY_CASTLING; ++cf)
   {
       Bitboard b = cf;
@@ -138,17 +169,31 @@ void Position::init() {
           Zobrist::castling[cf] ^= k ? k : rk.rand<Key>();
       }
   }
-
+  /*
+  用途不明
+  */
   Zobrist::side = rk.rand<Key>();
   Zobrist::exclusion  = rk.rand<Key>();
 
+  /*
+  WHITE側の駒評価値は直接設定している（このposition.cppの冒頭部分）
+  ここではWHITE側の評価値をBLACK側にコピーしている
+  */
   for (PieceType pt = PAWN; pt <= KING; ++pt)
   {
       PieceValue[MG][make_piece(BLACK, pt)] = PieceValue[MG][pt];
       PieceValue[EG][make_piece(BLACK, pt)] = PieceValue[EG][pt];
 
       Score v = make_score(PieceValue[MG][pt], PieceValue[EG][pt]);
-
+	  /*
+	  PSQTはpsqtab.hに定義してある配列でScore変数が（32bitの上位16bitにミドルゲーム駒評価値を、下位16bitにエンドゲーム駒評価値を設定してある）
+	  盤位置に応じて格納されている。位置評価値の基本位置評価値と言える
+	  psq[BLACK][pt][~s]の~sは演算子のオーバーロードで座標変換している (例A1->A8,B2->B7）
+	  white側（先手）がプラス、BLACK側が（後手）マイナスをもつ
+	  基本位置評価値に駒評価値を加算してpsq配列を初期化している
+	  ｐｓｑ配列はstatic Score psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];と宣言されている
+	  おそらく初期化のされかた、ネーミングから駒評価値と位置評価値を組み合わせたもの
+	  */
       for (Square s = SQ_A1; s <= SQ_H8; ++s)
       {
          psq[WHITE][pt][ s] =  (v + PSQT[pt][s]);
@@ -161,7 +206,10 @@ void Position::init() {
 /// Position::operator=() creates a copy of 'pos'. We want the new born Position
 /// object to not depend on any external data so we detach state pointer from
 /// the source one.
-
+/*
+局面クラスpositionをコピーする演算子のオーバーロード
+startStateは用途不明
+*/
 Position& Position::operator=(const Position& pos) {
 
   std::memcpy(this, &pos, sizeof(Position));
@@ -196,7 +244,9 @@ void Position::clear() {
 /// Position::set() initializes the position object with the given FEN string.
 /// This function is not very robust - make sure that input FENs are correct,
 /// this is assumed to be the responsibility of the GUI.
-
+/*
+FEN stringを読み込んで局面を設定している
+*/
 void Position::set(const string& fenStr, bool isChess960, Thread* th) {
 /*
    A FEN string defines a particular position using only the ASCII character set.
@@ -238,17 +288,24 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   std::istringstream ss(fenStr);
 
   clear();
+  //空白文字をスキップさせない設定
   ss >> std::noskipws;
 
   // 1. Piece placement
+  //FEN stringのスキャンはA8->B8->...->H8
+  //A7->B7..->H7
+  //A1->B1->..H1と読み取ってい行く
   while ((ss >> token) && !isspace(token))
   {
+	  //数字は空白を表すので数値だけ座標を加算する
       if (isdigit(token))
           sq += Square(token - '0'); // Advance the given number of files
-
+	  //FEN stringの見本
+	  //"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+	  //
       else if (token == '/')
           sq -= Square(16);
-
+	  //ここはFEN stringを駒コードに変換してput_pieceを呼んで内部データを更新している
       else if ((idx = PieceToChar.find(token)) != string::npos)
       {
           put_piece(sq, color_of(Piece(idx)), type_of(Piece(idx)));
@@ -257,6 +314,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   }
 
   // 2. Active color
+  //手番を設定している
   ss >> token;
   sideToMove = (token == 'w' ? WHITE : BLACK);
   ss >> token;
@@ -266,6 +324,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   // the game instead of KQkq and also X-FEN standard that, in case of Chess960,
   // if an inner rook is associated with the castling right, the castling tag is
   // replaced by the file letter of the involved rook, as for the Shredder-FEN.
+  //キャスリングに関することのようだが詳細不明
   while ((ss >> token) && !isspace(token))
   {
       Square rsq;
@@ -289,6 +348,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   }
 
   // 4. En passant square. Ignore if no pawn capture is possible
+  //用途不明
   if (   ((ss >> col) && (col >= 'a' && col <= 'h'))
       && ((ss >> row) && (row == '3' || row == '6')))
   {
@@ -299,12 +359,14 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   }
 
   // 5-6. Halfmove clock and fullmove number
+  //用途不明
   ss >> std::skipws >> st->rule50 >> gamePly;
 
   // Convert from fullmove starting from 1 to ply starting from 0,
   // handle also common incorrect FEN with fullmove = 0.
+  //用途不明
   gamePly = std::max(2 * (gamePly - 1), 0) + (sideToMove == BLACK);
-
+  //用途不明
   chess960 = isChess960;
   thisThread = th;
   set_state(st);
@@ -352,6 +414,9 @@ void Position::set_castling_right(Color c, Square rfrom) {
 Position::set関数から呼ばれており、Positionクラスの主要変数の初期化を
 していると思われる。
 用途不明
+Zobristはchessなどに使用される局面の状態を１つのハッシュ値で代表させる。
+参考HP:http://hackemdown.blogspot.jp/2014/06/zobrist-hashing.html
+
 */
 void Position::set_state(StateInfo* si) const {
 
@@ -360,21 +425,35 @@ void Position::set_state(StateInfo* si) const {
   si->psq = SCORE_ZERO;
 
   si->checkersBB = attackers_to(king_square(sideToMove)) & pieces(~sideToMove);
-
+  /*
+  すべての駒を巡回する
+  */
   for (Bitboard b = pieces(); b; )
   {
       Square s = pop_lsb(&b);
       Piece pc = piece_on(s);
+	  /*
+	  現局面でのハッシュ値
+	  */
       si->key ^= Zobrist::psq[color_of(pc)][type_of(pc)][s];
+	  /*
+	  psqは駒種ごとの位置評価値なので、si->psqhaは現局面での位置評価値の集計
+	  */
       si->psq += psq[color_of(pc)][type_of(pc)][s];
   }
-
+  /*
+  詳細不明であるがアンパッサンになにか関係ある？
+  */
   if (ep_square() != SQ_NONE)
       si->key ^= Zobrist::enpassant[file_of(ep_square())];
-
+  /*
+  カラーごとのハッシュ値をつける
+  */
   if (sideToMove == BLACK)
       si->key ^= Zobrist::side;
-
+  /*
+  詳細不明であるがキャスリングごとのハッシュ値をつける
+  */
   si->key ^= Zobrist::castling[st->castlingRights];
 
   for (Bitboard b = pieces(PAWN); b; )
@@ -396,7 +475,7 @@ void Position::set_state(StateInfo* si) const {
 
 /// Position::fen() returns a FEN representation of the position. In case of
 /// Chess960 the Shredder-FEN notation is used. This is mainly a debugging function.
-
+//内部データよりFEN stringを作り上げる
 const string Position::fen() const {
 
   int emptyCnt;
@@ -446,7 +525,9 @@ const string Position::fen() const {
 
 /// Position::pretty() returns an ASCII representation of the position to be
 /// printed to the standard output together with the move's san notation.
-
+/*
+内部データ（board[]など）と渡された指し手情報を表示する
+*/
 const string Position::pretty(Move m) const {
 
   std::ostringstream ss;
@@ -491,6 +572,17 @@ pop_lsbはなにか
 	LSB（最下位bit）からスキャンして1が立っているindexを返す
 	indexは0から始まる
 pin付けされた駒のbitboardを返す
+Colorに自陣カラー kingColorに自陣カラーを指定すれば
+自KINGに釘付けされた駒（自陣側の駒、敵の駒ではない）を返す
+但しpinされた駒は１つだけで２つ挟まっているとpinとは判断されない
+check_blockers関数がこの役割を行う
+＝つまり自KINGへのcheckをblockしている駒
+
+Colorに自陣カラー kingColorに敵陣カラーを指定すれば
+敵KINGに釘付けされた駒（自陣側の駒、敵陣の駒ではない）を返す
+但しpinされた駒は１つだけで２つ挟まっているとpinとは判断されない
+つまり敵のKINGへの利きを邪魔している自陣側の駒を返す
+discovered_check_candidates関数がこの役割を行っている
 */
 Bitboard Position::check_blockers(Color c, Color kingColor) const {
 
@@ -506,6 +598,8 @@ Bitboard Position::check_blockers(Color c, Color kingColor) const {
 
   while (pinners)
   {
+	  //ksqと飛び駒との間の利きと全駒との＆演算してpinされた駒があるか調べている
+	  //あればbに保存される
       b = between_bb(ksq, pop_lsb(&pinners)) & pieces();
 	  //bが１bitしかなかったら（つまり飛び駒とKINGの間にある駒（味方、敵関係なく）が
 	  //１枚しかなかったら飛び駒の利きをブロックしている駒として登録して返す
@@ -523,11 +617,19 @@ Bitboard Position::check_blockers(Color c, Color kingColor) const {
 attacks_from<>関数の概要
 	指定した駒コード、盤座標にある駒の利きのbitboardを返す。ただしPAWNは進む方向と
 	駒を取る利きが違う、attacks_fromはあくまで駒をとる利きのみかえす
-	また非飛び駒だけ
-attacks_bb
+	attacks_from関数は３つオーバーロードしている
+	attacks_from(Square s)はテンプレート引数で駒種を指定して、
+		指定した座標から利きのbitboardを返す。
+		飛び駒だけでなく非飛び駒の利きbitboardも返せる。
+	attacks_from<PAWN>(Square s, Color c)
+		駒種はPAWNだけで座標とカラーが指定できて利きbitboardを返す
+	attacks_from(Piece pc, Square s)
+		指定した座標、指定した駒種から利きのbitboardを返す。
+		非飛び駒は対応していない
 	
-指定した座標に利いている全ての駒（カラーに関係なく）を検出してビットを立てた
-bitboardを返す
+attackers_to関数の機能
+	指定した座標に利いている全ての駒（カラーに関係なく）を検出してビットを立てた
+	bitboardを返す
 */
 Bitboard Position::attackers_to(Square s, Bitboard occ) const {
 
@@ -541,7 +643,14 @@ Bitboard Position::attackers_to(Square s, Bitboard occ) const {
 
 
 /// Position::legal() tests whether a pseudo-legal move is legal
-
+/*
+引数Move mが合法手か検査する合法手かどうかは
+アンパッサンだったら
+	用途不明
+動いた駒がKINGだったら
+	移動先に敵の利きが利いていたらNG、キャスリングはOK
+pinがかかっていないこと,pinがかかっていてもpinがはずれない動きならOK
+*/
 bool Position::legal(Move m, Bitboard pinned) const {
 
   assert(is_ok(m));
@@ -580,6 +689,10 @@ bool Position::legal(Move m, Bitboard pinned) const {
 
   // A non-king move is legal if and only if it is not pinned or it
   // is moving along the ray towards or away from the king.
+  /*
+  BISHOP,ROOKが仮にPINされていてもPINを外さないうごきならOK
+
+  */
   return   !pinned
         || !(pinned & from)
         ||  aligned(from, to_sq(m), king_square(us));
@@ -905,10 +1018,14 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
       else
       {
           // Direct checks
+		  //ci.checkSq[pt]には駒種ごとに敵KINGに王手をかけることで出来るbitboardがはいっている
+		  //今回のMoveによってその場所に移動できたかをci.checkSq[pt] & toでチエックしている
+		  //そしてチエックが可能であればcheckerBBに追加している
           if (ci.checkSq[pt] & to)
               st->checkersBB |= to;
 
           // Discovered checks
+		  //ROOKまたはBISHOPではない駒が動いたことでROOK,BISHOPの利きが敵KINGに届いたのではないかチエックしている
           if (unlikely(ci.dcCandidates) && (ci.dcCandidates & from))
           {
               if (pt != ROOK)
