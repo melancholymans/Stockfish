@@ -180,8 +180,7 @@ public:
 	bool empty(Square s) const;
 	/*
 	カラーと駒種を指定すればpieceCount[COLOR][PIECE_TYPE]を
-	返す。pieceCount配列がなんなのか分かっていないが
-	多分駒種、カラーごとの駒数だと思われる
+	返す。pieceCount配列はカラーごと駒種ことの駒数を記録している配列
 	ところでtemplate<PieceType Pt>とはなんだろう
 	おそらく駒種ごとにcount関数をテンプレート化しているのでは
 	それだけ高速に動作する？
@@ -871,7 +870,8 @@ inline Thread* Position::this_thread() const {
 
 /*
 駒を置くことによって生じるbitboardの更新
-駒の移動ではないの初期の駒配置などで使用
+駒の移動ではない、初期の駒配置に使用する
+pieceCountは
 */
 inline void Position::put_piece(Square s, Color c, PieceType pt) {
 
@@ -901,7 +901,9 @@ inline void Position::move_piece(Square from, Square to, Color c, PieceType pt) 
 }
 
 /*
-局面の更新であるが用途不明
+駒を取られた時の局面の更新
+byTypeBB,byTypeBB,byColorBBを更新
+index[],pieceList[][][],pieceCount[][]配列を更新する関数
 */
 inline void Position::remove_piece(Square s, Color c, PieceType pt) {
 

@@ -66,15 +66,16 @@ Key Position::exclusion_key() const
 	return st->key ^ Zobrist::exclusion;
 }
 
-/*
-用途不明
-*/
 namespace {
 
 // min_attacker() is a helper function used by see() to locate the least
 // valuable attacker for the side to move, remove the attacker we just found
 // from the bitboards and scan for new X-ray attacks behind it.
-
+/*
+min_attacker関数はsee関数のヘルパー関数
+でsee関数はおそらく静止探索だと思う
+詳細不明
+*/
 template<int Pt> FORCE_INLINE
 PieceType min_attacker(const Bitboard* bb, const Square& to, const Bitboard& stmAttackers,
                        Bitboard& occupied, Bitboard& attackers) {
@@ -84,7 +85,9 @@ PieceType min_attacker(const Bitboard* bb, const Square& to, const Bitboard& stm
       return min_attacker<Pt+1>(bb, to, stmAttackers, occupied, attackers);
 
   occupied ^= b & ~(b - 1);
-
+  /*
+  ここの処理不明
+  */
   if (Pt == PAWN || Pt == BISHOP || Pt == QUEEN)
       attackers |= attacks_bb<BISHOP>(to, occupied) & (bb[BISHOP] | bb[QUEEN]);
 
@@ -135,7 +138,7 @@ CheckInfo::CheckInfo(const Position& pos) {
 /// Secondly, the black halves of the tables are initialized by flipping and
 /// changing the sign of the white scores.
 /*
-用途不明なZobristを初期化している
+Zobristを初期化している
 そのあと評価値（駒評価値と位置評価値）を初期している
 */
 void Position::init() {
@@ -413,7 +416,6 @@ void Position::set_castling_right(Color c, Square rfrom) {
 /*
 Position::set関数から呼ばれており、Positionクラスの主要変数の初期化を
 していると思われる。
-用途不明
 Zobristはchessなどに使用される局面の状態を１つのハッシュ値で代表させる。
 参考HP:http://hackemdown.blogspot.jp/2014/06/zobrist-hashing.html
 
@@ -437,7 +439,7 @@ void Position::set_state(StateInfo* si) const {
 	  */
       si->key ^= Zobrist::psq[color_of(pc)][type_of(pc)][s];
 	  /*
-	  psqは駒種ごとの位置評価値なので、si->psqhaは現局面での位置評価値の集計
+	  psqは駒種ごとの位置評価値なので、si->psqは現局面での位置評価値の集計
 	  */
       si->psq += psq[color_of(pc)][type_of(pc)][s];
   }
@@ -455,13 +457,17 @@ void Position::set_state(StateInfo* si) const {
   詳細不明であるがキャスリングごとのハッシュ値をつける
   */
   si->key ^= Zobrist::castling[st->castlingRights];
-
+  /*
+  PAWNだけ巡回して、PAWNだけのハッシュ値を求める
+  */
   for (Bitboard b = pieces(PAWN); b; )
   {
       Square s = pop_lsb(&b);
       si->pawnKey ^= Zobrist::psq[color_of(piece_on(s))][PAWN][s];
   }
-
+  /*
+  カラー、駒種、駒数によるハッシュ値、最後のcntは升目のハッシュ値で代用している
+  */
   for (Color c = WHITE; c <= BLACK; ++c)
       for (PieceType pt = PAWN; pt <= KING; ++pt)
           for (int cnt = 0; cnt < pieceCount[c][pt]; ++cnt)
@@ -702,7 +708,9 @@ bool Position::legal(Move m, Bitboard pinned) const {
 /// Position::pseudo_legal() takes a random move and tests whether the move is
 /// pseudo legal. It is used to validate moves from TT that can be corrupted
 /// due to SMP concurrent access or hash position key aliasing.
-
+/*
+用途不明
+*/
 bool Position::pseudo_legal(const Move m) const {
 
   Color us = sideToMove;
@@ -774,7 +782,10 @@ bool Position::pseudo_legal(const Move m) const {
 
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
-
+/*
+指し手に非合法手ではないかチエックしている
+ではない
+*/
 bool Position::gives_check(Move m, const CheckInfo& ci) const {
 
   assert(is_ok(m));
@@ -786,15 +797,20 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
   PieceType pt = type_of(piece_on(from));
 
   // Is there a direct check?
+  //駒の移動先に移動した結果王手が掛けれる位置ならtrue
   if (ci.checkSq[pt] & to)
       return true;
 
   // Is there a discovered check?
-  if (   unlikely(ci.dcCandidates)
-      && (ci.dcCandidates & from)
-      && !aligned(from, to, ci.ksq))
+  /*
+  移動することで王手が掛けれるならtrueを返す
+  */
+  if (   unlikely(ci.dcCandidates) && (ci.dcCandidates & from) && !aligned(from, to, ci.ksq))
       return true;
-
+  /*
+  指し手パターンによって判断、NORMALなら即false
+  指し手パターンが成りで成った先で王手ができるようならtrue
+  */
   switch (type_of(m))
   {
   case NORMAL:
@@ -807,6 +823,9 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
   // of direct checks and ordinary discovered check, so the only case we
   // need to handle is the unusual case of a discovered check through
   // the captured pawn.
+  /*
+  アンパッサン関係のようだが詳細不明
+  */
   case ENPASSANT:
   {
       Square capsq = make_square(file_of(to), rank_of(from));
@@ -815,6 +834,9 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
       return  (attacks_bb<  ROOK>(ci.ksq, b) & pieces(sideToMove, QUEEN, ROOK))
             | (attacks_bb<BISHOP>(ci.ksq, b) & pieces(sideToMove, QUEEN, BISHOP));
   }
+  /*
+  キャスリングのようだが詳細不明
+  */
   case CASTLING:
   {
       Square kfrom = from;
@@ -835,34 +857,62 @@ bool Position::gives_check(Move m, const CheckInfo& ci) const {
 /// Position::do_move() makes a move, and saves all information necessary
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal
 /// moves should be filtered out before this function is called.
-
+/*
+局面を更新する関数、下の関数do_moveのオーバーライド
+*/
 void Position::do_move(Move m, StateInfo& newSt) {
 
   CheckInfo ci(*this);
   do_move(m, newSt, ci, gives_check(m, ci));
 }
 
+/*
+局面を更新する唯一の関数
+
+*/
 void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveIsCheck) {
 
   assert(is_ok(m));
   assert(&newSt != st);
 
+  /*
+  展開したノード数をカウントしている
+  think関数で探索が終了したあとnodes_searched関数を呼び出し
+  このnodes数を表示させる
+  */
   ++nodes;
+  /*
+  StateInfo.keyに局面のハッシュ値が記録されている
+  */
   Key k = st->key;
 
   // Copy some fields of the old state to our new StateInfo object except the
   // ones which are going to be recalculated from scratch anyway and then switch
   // our state pointer to point to the new (ready to be updated) state.
+  /*
+  StateCopySize64はStateInfo構造体のなかでkeyアイテムまでのオフセット（byte単位）数を返す
+  つまりStateInfo構造体の一部だけnewStにコピーする（何故全部コピーしないのかは不明）
+  */
   std::memcpy(&newSt, st, StateCopySize64 * sizeof(uint64_t));
-
+  /*
+  StateInfoをつないでいる
+  */
   newSt.previous = st;
   st = &newSt;
 
   // Update side to move
+  /*
+  局面のハッシュ値を更新している
+  */
   k ^= Zobrist::side;
 
   // Increment ply counters. In particular, rule50 will be reset to zero later on
   // in case of a capture or a pawn move.
+  /*
+  gamePlyはゲーム手数のカウントアップ
+  rule50のためのカウントアップ
+  pliesFromNullは今のところ不明do_null_move関数では0に初期化する
+  */
   ++gamePly;
   ++st->rule50;
   ++st->pliesFromNull;
@@ -890,13 +940,20 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
       st->psq += psq[us][ROOK][rto] - psq[us][ROOK][rfrom];
       k ^= Zobrist::psq[us][ROOK][rfrom] ^ Zobrist::psq[us][ROOK][rto];
   }
-
+  /*
+  capturedは取った駒の駒種、もし取る手ではなければcapturedは0
+  */
   if (captured)
   {
       Square capsq = to;
 
       // If the captured piece is a pawn, update pawn hash key, otherwise
       // update non-pawn material.
+	  /*
+	  もしとった駒種がPAWNで取り方がアンパッサンなら
+	  とった駒は移動先の真後ろになる（アンパッサンのルール確認）ので
+	  capsqはtoではなくto+pawn_push(them)となる
+	  */
       if (captured == PAWN)
       {
           if (type_of(m) == ENPASSANT)
@@ -918,24 +975,47 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
           st->npMaterial[them] -= PieceValue[MG][captured];
 
       // Update board and piece lists
+	  /*
+	  駒を取ったことによって変更になる
+	  byTypeBB,byTypeBB,byColorBBを更新
+	  index[],pieceList[][][],pieceCount[][]配列を更新する関数
+	  */
       remove_piece(capsq, them, captured);
 
       // Update material hash key and prefetch access to materialTable
+	  /*
+	  局面のハッシュ値から取られた駒のハッシュ値を除去している
+	  同時にmaterialKeyも変更している
+	  */
       k ^= Zobrist::psq[them][captured][capsq];
       st->materialKey ^= Zobrist::psq[them][captured][pieceCount[them][captured]];
       prefetch((char*)thisThread->materialTable[st->materialKey]);
 
       // Update incremental scores
+	  /*
+	  st->psqは位置評価値の集計値なので取られた駒の差分をしている
+	  */
       st->psq -= psq[them][captured][capsq];
 
       // Reset rule 50 counter
+	  /*
+	  駒を取ったのでrule50は一旦キャンセルとなる
+	  */
       st->rule50 = 0;
   }
-
+  /*
+  これ以降は駒を取られていない指し手の更新
+  */
   // Update hash key
+  /*
+  移動前のハッシュ値を除去し、移動後のハッシュ値を更新している
+  */
   k ^= Zobrist::psq[us][pt][from] ^ Zobrist::psq[us][pt][to];
 
   // Reset en passant square
+  /*
+  アンパッサン関係だと思うが詳細不明
+  */
   if (st->epSquare != SQ_NONE)
   {
       k ^= Zobrist::enpassant[file_of(st->epSquare)];
@@ -943,6 +1023,9 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   }
 
   // Update castling rights if needed
+  /*
+  キャスリング関係かな、詳細不明
+  */
   if (st->castlingRights && (castlingRightsMask[from] | castlingRightsMask[to]))
   {
       int cr = castlingRightsMask[from] | castlingRightsMask[to];
@@ -954,6 +1037,12 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   prefetch((char*)TT.first_entry(k));
 
   // Move the piece. The tricky Chess960 castling is handled earlier
+  /*
+  move_piece関数の機能は
+  byTypeBB,byTypeBB,byColorBBの更新
+  board,index[],pieceList[][][]配列の更新
+  駒取りはないのでpieceCount[]配列の更新はない
+  */
   if (type_of(m) != CASTLING)
       move_piece(from, to, us, pt);
 
@@ -961,33 +1050,51 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   if (pt == PAWN)
   {
       // Set en-passant square if the moved pawn can be captured
+	  /*
+	  (int(to) ^ int(from)) == 16となるPAWNの動きは２段とびのみ
+	  でかつアンパッサンできる条件が成立している場合の処理
+	  */
       if (   (int(to) ^ int(from)) == 16
           && (attacks_from<PAWN>(from + pawn_push(us), us) & pieces(them, PAWN)))
       {
           st->epSquare = Square((from + to) / 2);
           k ^= Zobrist::enpassant[file_of(st->epSquare)];
       }
-
+	  /*
+	  PAWNがなる場合の処理
+	  */
       else if (type_of(m) == PROMOTION)
       {
           PieceType promotion = promotion_type(m);
 
           assert(relative_rank(us, to) == RANK_8);
           assert(promotion >= KNIGHT && promotion <= QUEEN);
-
+		  /*
+		  一旦PAWNを除去する処理
+		  */
           remove_piece(to, us, PAWN);
+		  /*
+		  なった駒を移動先に置く処理
+		  */
           put_piece(to, us, promotion);
 
           // Update hash keys
+		  /*
+		  局面のハッシュ値をを更新、pawn専用のハッシュ値も更新
+		  */
           k ^= Zobrist::psq[us][PAWN][to] ^ Zobrist::psq[us][promotion][to];
           st->pawnKey ^= Zobrist::psq[us][PAWN][to];
           st->materialKey ^=  Zobrist::psq[us][promotion][pieceCount[us][promotion]-1]
                             ^ Zobrist::psq[us][PAWN][pieceCount[us][PAWN]];
 
           // Update incremental score
+		  //位置評価値もも更新
           st->psq += psq[us][promotion][to] - psq[us][PAWN][to];
 
           // Update material
+		  /*
+		  駒評価値も更新
+		  */
           st->npMaterial[us] += PieceValue[MG][promotion];
       }
 
@@ -996,21 +1103,38 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
       prefetch((char*)thisThread->pawnsTable[st->pawnKey]);
 
       // Reset rule 50 draw counter
+	  /*
+	  引き分け条件をクリア
+	  */
       st->rule50 = 0;
   }
-
+  /*
+  これ以降は駒を取らない指し手でPAWN以外の駒種の処理、共通処理かな
+  */
   // Update incremental scores
+  /*
+  位置評価値の更新
+  */
   st->psq += psq[us][pt][to] - psq[us][pt][from];
 
   // Set capture piece
+  /*
+  とった駒種
+  */
   st->capturedType = captured;
 
   // Update the key with the final value
+  /*
+  最終ハッシュ値を登録
+  */
   st->key = k;
 
   // Update checkers bitboard: piece must be already moved due to attacks_from()
   st->checkersBB = 0;
-
+  /*
+  moveIsCheckはdo_move関数の引数の１つ
+  王手の手があるならtrue
+  */
   if (moveIsCheck)
   {
       if (type_of(m) != NORMAL)
@@ -1036,7 +1160,9 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
           }
       }
   }
-
+  /*
+  手番の変更
+  */
   sideToMove = ~sideToMove;
 
   assert(pos_is_ok());
@@ -1045,7 +1171,9 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
 
 /// Position::undo_move() unmakes a move. When it returns, the position should
 /// be restored to exactly the same state as before the move was made.
-
+/*
+do_move関数にくらべすごくコード量が少ない
+*/
 void Position::undo_move(Move m) {
 
   assert(is_ok(m));
@@ -1065,12 +1193,17 @@ void Position::undo_move(Move m) {
       assert(pt == promotion_type(m));
       assert(relative_rank(us, to) == RANK_8);
       assert(promotion_type(m) >= KNIGHT && promotion_type(m) <= QUEEN);
-
+	  /*
+	  remove_piece関数は駒を取り除く時の処理
+	  ひとます、なった駒をもとに戻し通常の移動の処理と共通化する
+	  */
       remove_piece(to, us, promotion_type(m));
       put_piece(to, us, PAWN);
       pt = PAWN;
   }
-
+  /*
+  キャスリング関係の戻しかな
+  */
   if (type_of(m) == CASTLING)
   {
       Square rfrom, rto;
@@ -1078,8 +1211,13 @@ void Position::undo_move(Move m) {
   }
   else
   {
+	  /*
+	  移動の戻し（from,toをテレコにしている）
+	  */
       move_piece(to, from, us, pt); // Put the piece back at the source square
-
+      /*
+	  st->capturedTypeの使い方がよくわからん
+	  */
       if (st->capturedType)
       {
           Square capsq = to;
@@ -1108,6 +1246,9 @@ void Position::undo_move(Move m) {
 
 /// Position::do_castling() is a helper used to do/undo a castling move. This
 /// is a bit tricky, especially in Chess960.
+/*
+キャスリング関係、詳細不明
+*/
 template<bool Do>
 void Position::do_castling(Square from, Square& to, Square& rfrom, Square& rto) {
 
@@ -1127,7 +1268,9 @@ void Position::do_castling(Square from, Square& to, Square& rfrom, Square& rto) 
 
 /// Position::do(undo)_null_move() is used to do(undo) a "null move": It flips
 /// the side to move without executing any move on the board.
-
+/*
+ヌルムーブ用の局面更新関数
+*/
 void Position::do_null_move(StateInfo& newSt) {
 
   assert(!checkers());
@@ -1153,7 +1296,9 @@ void Position::do_null_move(StateInfo& newSt) {
 
   assert(pos_is_ok());
 }
-
+/*
+ヌルムーブ用の局面復元関数
+*/
 void Position::undo_null_move() {
 
   assert(!checkers());
@@ -1165,7 +1310,9 @@ void Position::undo_null_move() {
 
 /// Position::see() is a static exchange evaluator: It tries to estimate the
 /// material gain or loss resulting from a move.
-
+/*
+静止探索
+*/
 Value Position::see_sign(Move m) const {
 
   assert(is_ok(m));
@@ -1173,12 +1320,19 @@ Value Position::see_sign(Move m) const {
   // Early return if SEE cannot be negative because captured piece value
   // is not less then capturing one. Note that king moves always return
   // here because king midgame value is set to 0.
+  /*
+  取る駒の駒価値より取られる駒の駒価値が大きければ価値10000を返す
+  そうではなければ（価値の低い駒しかとれなければ）see関数を呼ぶ
+  */
   if (PieceValue[MG][moved_piece(m)] <= PieceValue[MG][piece_on(to_sq(m))])
       return VALUE_KNOWN_WIN;
 
   return see(m);
 }
 
+/*
+
+*/
 Value Position::see(Move m) const {
 
   Square from, to;
@@ -1194,14 +1348,19 @@ Value Position::see(Move m) const {
   to = to_sq(m);
   swapList[0] = PieceValue[MG][piece_on(to)];
   stm = color_of(piece_on(from));
-  occupied = pieces() ^ from;
+  occupied = pieces() ^ from;	//occupiedはformにいる駒以外の全ての駒のbitboard
 
   // Castling moves are implemented as king capturing the rook so cannot be
   // handled correctly. Simply return 0 that is always the correct value
   // unless in the rare case the rook ends up under attack.
+  /*
+  キャスリング関係なら価値0で返る
+  */
   if (type_of(m) == CASTLING)
       return VALUE_ZERO;
-
+  /*
+  指し手パターンがアンパッサンならswapListにpawnを入れておく
+  */
   if (type_of(m) == ENPASSANT)
   {
       occupied ^= to - pawn_push(stm); // Remove the captured pawn
@@ -1210,9 +1369,17 @@ Value Position::see(Move m) const {
 
   // Find all attackers to the destination square, with the moving piece
   // removed, but possibly an X-ray attacker added behind it.
+  /*
+  指した手の移動先に利いている駒のbitboardをattackersに入れる（カラーに関係なく）
+  */
   attackers = attackers_to(to, occupied) & occupied;
 
   // If the opponent has no attackers we are finished
+  /*
+  stmAttackersに敵の駒だけを入れる
+  もし敵の駒がなければ（つまり取り合いがなければ）
+  そこで中断
+  */
   stm = ~stm;
   stmAttackers = attackers & pieces(stm);
   if (!stmAttackers)
@@ -1225,17 +1392,30 @@ Value Position::see(Move m) const {
   // capture with the least valuable piece. After each capture, we look for
   // new X-ray attacks from behind the capturing piece.
   captured = type_of(piece_on(from));
-
+  /*
+  slIndexは１から始まる
+  swapList[]は取り合い駒リスト
+  */
   do {
       assert(slIndex < 32);
 
       // Add the new entry to the swap list
+	  /*
+	  取り合いになっていくがその駒評価値をswapListに記録する
+	  */
       swapList[slIndex] = -swapList[slIndex - 1] + PieceValue[MG][captured];
 
       // Locate and remove the next least valuable attacker
+	  /*
+	  まず取り合いはPAWNからおこない、to座標にきている駒を取り合い
+	  その駒種を返す
+	  */
       captured = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
 
       // Stop before processing a king capture
+	  /*
+	  取り合いになり徐々に駒種がPAWNから上がっていくがKNIGになったらそこでやめる
+	  */
       if (captured == KING)
       {
           if (stmAttackers == attackers)
@@ -1252,6 +1432,9 @@ Value Position::see(Move m) const {
 
   // Having built the swap list, we negamax through it to find the best
   // achievable score from the point of view of the side to move.
+  /*
+  swapListを遡り最小の評価値を得る？
+  */
   while (--slIndex)
       swapList[slIndex - 1] = std::min(-swapList[slIndex], swapList[slIndex - 1]);
 
