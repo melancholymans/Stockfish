@@ -37,10 +37,24 @@ typedef std::map<std::string, Option, CaseInsensitiveLess> OptionsMap;
 
 /// Option class implements an option as defined by UCI protocol
 class Option {
-
+  /*
+  この宣言の意味がよくわからん
+  */
   typedef void (*OnChange)(const Option&);
 
 public:
+  /*
+
+
+  オプションの取り方が４種類ある
+  関数（省略可）buttn型　ー＞実装はないようである
+  bool型＋関数（省略可）　check型
+  char型＋関数（省略可）　string型
+  int型,int型,int型,関数（省略可）　spin型
+
+  button,check,string型,spin型はこのクラスのプライベート変数に
+  文字列として保存されている
+  */
   Option(OnChange = NULL);
   Option(bool v, OnChange = NULL);
   Option(const char* v, OnChange = NULL);
@@ -59,7 +73,9 @@ private:
   size_t idx;
   OnChange on_change;
 };
-
+/*
+この関数はOptionではなくUser interfaceでの関数
+*/
 void init(OptionsMap&);
 void loop(int argc, char* argv[]);
 

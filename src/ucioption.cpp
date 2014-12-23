@@ -111,7 +111,10 @@ std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
 
 
 /// Option class constructors and conversion operators
-
+/*
+オプションの型としてstring,check,button,spinの型に応じて
+コンストラクタも４種類ある
+*/
 Option::Option(const char* v, OnChange f) : type("string"), min(0), max(0), on_change(f)
 { defaultValue = currentValue = v; }
 
@@ -124,12 +127,16 @@ Option::Option(OnChange f) : type("button"), min(0), max(0), on_change(f)
 Option::Option(int v, int minv, int maxv, OnChange f) : type("spin"), min(minv), max(maxv), on_change(f)
 { std::ostringstream ss; ss << v; defaultValue = currentValue = ss.str(); }
 
-
+/*
+int型を要求されたときこの演算子オーバーロードが起動する
+*/
 Option::operator int() const {
   assert(type == "check" || type == "spin");
   return (type == "spin" ? atoi(currentValue.c_str()) : currentValue == "true");
 }
-
+/*
+string
+*/
 Option::operator std::string() const {
   assert(type == "string");
   return currentValue;
@@ -150,7 +157,9 @@ void Option::operator<<(const Option& o) {
 /// operator=() updates currentValue and triggers on_change() action. It's up to
 /// the GUI to check for option's limits, but we could receive the new value from
 /// the user by console window, so let's check the bounds anyway.
-
+/*
+Option[name] = valueのとき起動される演算子オーバライド
+*/
 Option& Option::operator=(const string& v) {
 
   assert(!type.empty());
