@@ -51,7 +51,20 @@ bool CaseInsensitiveLess::operator() (const string& s1, const string& s2) const 
 
 
 /// init() initializes the UCI options to their hard-coded default values
+/*
+main関数からただ一度呼ばれる
 
+OptionsMapはkeyをstring型、valueをOptionクラスを保持するmapコンテナ
+string型のkeyとは
+"Write Debug Log"
+"Write Search Log"
+"Search Log Filename"
+"Book File"
+で、valueはOption(false, on_logger)です
+<< 演算子がオーバライドされているのでこのファイルの後ろにある
+void Option::operator<<(const Option& o)
+関数を呼ぶことになる
+*/
 void init(OptionsMap& o) {
 
   o["Write Debug Log"]          << Option(false, on_logger);
@@ -88,7 +101,10 @@ void init(OptionsMap& o) {
 
 /// operator<<() is used to print all the options default values in chronological
 /// insertion order (the idx field) and in the format defined by the UCI protocol.
-
+/*
+OptionMapのidx順にオプションの内容を文字列化して(ostream)返す
+uci.cppのloop関数内で"uci"コマンドの時に呼ばれる
+*/
 std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
 
   for (size_t idx = 0; idx < om.size(); ++idx)
@@ -135,7 +151,7 @@ Option::operator int() const {
   return (type == "spin" ? atoi(currentValue.c_str()) : currentValue == "true");
 }
 /*
-string
+stringを要求されたときこの演算子オーバーロードが起動する
 */
 Option::operator std::string() const {
   assert(type == "string");
@@ -144,6 +160,11 @@ Option::operator std::string() const {
 
 
 /// operator<<() inits options and assigns idx in the correct printing order
+/*
+演算子<<はクラスOptionをOptionMapsに代入する
+insert_orderはOptionMapsにオプションをいれるとき
+カウントアップしていき入った順から0からidが振られていく
+*/
 
 void Option::operator<<(const Option& o) {
 

@@ -27,12 +27,18 @@ namespace UCI {
 
 class Option;
 
+/*
+用途不明、OptionMapに使われている
+*/
 /// Custom comparator because UCI options should be case insensitive
 struct CaseInsensitiveLess {
   bool operator() (const std::string&, const std::string&) const;
 };
 
 /// Our options container is actually a std::map
+/*
+オプションを保持しているマップコンテナ
+*/
 typedef std::map<std::string, Option, CaseInsensitiveLess> OptionsMap;
 
 /// Option class implements an option as defined by UCI protocol
