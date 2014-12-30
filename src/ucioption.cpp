@@ -144,14 +144,14 @@ Option::Option(int v, int minv, int maxv, OnChange f) : type("spin"), min(minv),
 { std::ostringstream ss; ss << v; defaultValue = currentValue = ss.str(); }
 
 /*
-int型を要求されたときこの演算子オーバーロードが起動する
+int型を要求されたときの型変換演算子
 */
 Option::operator int() const {
   assert(type == "check" || type == "spin");
   return (type == "spin" ? atoi(currentValue.c_str()) : currentValue == "true");
 }
 /*
-stringを要求されたときこの演算子オーバーロードが起動する
+stringを要求されたときこの型変換演算子
 */
 Option::operator std::string() const {
   assert(type == "string");
