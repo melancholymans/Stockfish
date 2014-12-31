@@ -37,13 +37,34 @@
 #include "ucioption.h"
 
 namespace Search {
-
+  /*
+  Signals.stopは探索を止めるフラグ
+  stopOnPonderhit用途不明
+  firstRootMove用途不明
+  failedLowAtRoot;用途不明
+  */
   volatile SignalsType Signals;
   LimitsType Limits;
+  /*
+  ルート
+  */
   std::vector<RootMove> RootMoves;
+  /*
+  ルート局面
+  */
   Position RootPos;
+  /*
+  ルートでの手番
+  */
   Color RootColor;
+  /*
+  探索に要した時間をミリセコンドで計測
+  start_thinking関数内で現在時間を入れておき、探索終了後の時間と差し引きすることで経過時間を計測する
+  */
   Time::point SearchTime;
+  /*
+  用途不明
+  */
   StateStackPtr SetupStates;
 }
 
@@ -57,46 +78,116 @@ namespace {
   const bool FakeSplit = false;
 
   // Different node types, used as template parameter
+  /*
+  search関数のテンプレート引数
+  */
   enum NodeType { Root, PV, NonPV };
 
   // Dynamic razoring margin based on depth
+  /*
+  用途不明
+  */
   inline Value razor_margin(Depth d) { return Value(512 + 16 * d); }
 
   // Futility lookup tables (initialized at startup) and their access functions
+  /*
+  用途不明
+  */
   int FutilityMoveCounts[2][32]; // [improving][depth]
-
+  /*
+  用途不明
+  */
   inline Value futility_margin(Depth d) {
     return Value(100 * d);
   }
 
   // Reduction lookup tables (initialized at startup) and their access function
+  /*
+  Reduction（縮小？）
+  用途不明
+  */
   int8_t Reductions[2][2][64][64]; // [pv][improving][depth][moveNumber]
-
+  
+  /*
+  用途不明
+  */
   template <bool PvNode> inline Depth reduction(bool i, Depth d, int mn) {
 
     return (Depth) Reductions[PvNode][i][std::min(int(d) / ONE_PLY, 63)][std::min(mn, 63)];
   }
 
+  /*
+  用途不明
+  */
   size_t MultiPV, PVIdx;
+  /*
+  時間制御？
+  */
   TimeManager TimeMgr;
+  /*
+  用途不明
+  */
   double BestMoveChanges;
+  /*
+  用途不明
+  */
   Value DrawValue[COLOR_NB];
+  /*
+  Historyはクラスでプライベート変数にValue table[pieceType][SQ]を持っている
+  最初はid_loop関数内で0クリアしupdate関数で更新する
+  駒が移動した先の座標に得点が与えられ一種の位置評価で多くの駒が移動するほど高得点
+  駒の移動履歴のようなもの
+  */
   HistoryStats History;
+  /*
+  用途不明
+  */
   GainsStats Gains;
+  /*
+  用途不明
+  */
   MovesStats Countermoves, Followupmoves;
-
+  
+  /*
+  一般探索関数
+  */
   template <NodeType NT, bool SpNode>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
+  /*
+  多分末端用探索関数
+  */
   template <NodeType NT, bool InCheck>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
 
+  /*
+  無限ループを持っておりこのid_loop関数からsearch関数を呼ぶ
+  idle_loop関数->think関数->id_loop関数->search関数と呼ばれるようになっている
+  main関数でThreads.init()を呼んでnew_thread関数->thread_create関数->start_routine関数->idle_loop関数で一旦
+  sleep状態に遷移する
+  UCIからのコマンドgoによりstart_thking関数からsleep状態を解除しidle_loop関数から探索が開始される
+  */
   void id_loop(Position& pos);
+  /*
+  用途不明
+  */
   Value value_to_tt(Value v, int ply);
+  /*
+  用途不明
+  */
   Value value_from_tt(Value v, int ply);
+  /*
+  killerとかHistory配列を更新する
+  更新のタイミングはわかっていない
+  */
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
+  /*
+  用途不明
+  */
   string uci_pv(const Position& pos, int depth, Value alpha, Value beta);
-
+  /*
+  用途不明
+  */
   struct Skill {
     Skill(int l) : level(l), best(MOVE_NONE) {}
    ~Skill() {
@@ -117,7 +208,10 @@ namespace {
 
 
 /// Search::init() is called during startup to initialize various lookup tables
-
+/*
+main関数から呼ばれている
+用途不明
+*/
 void Search::init() {
 
   int d;  // depth (ONE_PLY == 2)
@@ -153,7 +247,11 @@ void Search::init() {
 
 /// Search::perft() is our utility to verify move generation. All the leaf nodes
 /// up to the given depth are generated and counted and the sum returned.
-
+/*
+同名の関数Search::perftから呼ばれる
+展開できるノードの数を返す。
+benchmarkから使用される
+*/
 static uint64_t perft(Position& pos, Depth depth) {
 
   StateInfo st;
@@ -178,17 +276,35 @@ uint64_t Search::perft(Position& pos, Depth depth) {
 /// called by the main thread when the program receives the UCI 'go' command. It
 /// searches from RootPos and at the end prints the "bestmove" to output.
 
+/*
+idle_loop関数->think関数->id_loop関数->search関数と呼ばれるようになっている
+グローバル変数のRootPos変数はwait_for_think_finished関数で現在の局面をコピーしてもらっている
+
+
+*/
 void Search::think() {
 
   static PolyglotBook book; // Defined static to initialize the PRNG only once
 
   RootColor = RootPos.side_to_move();
+  /*
+  時間制御？
+  */
   TimeMgr.init(Limits, RootPos.game_ply(), RootColor);
 
+  /*
+  用途不明
+  */
   int cf = Options["Contempt Factor"] * PawnValueEg / 100; // From centipawns
   DrawValue[ RootColor] = VALUE_DRAW - Value(cf);
   DrawValue[~RootColor] = VALUE_DRAW + Value(cf);
-
+  /*
+  ルートでの合法手の手がなければ
+  UCIにinfoコマンドで通達して
+  finalize:に飛ぶ
+  UCIプロトコルにはエンジン側から負けを通知するコマンドがないようです
+  http://www.geocities.jp/shogidokoro/usi.html
+  */
   if (RootMoves.empty())
   {
       RootMoves.push_back(MOVE_NONE);
@@ -199,6 +315,9 @@ void Search::think() {
       goto finalize;
   }
 
+  /*
+
+  */
   if (Options["OwnBook"] && !Limits.infinite && !Limits.mate)
   {
       Move bookMove = book.probe(RootPos, Options["Book File"], Options["Best Book Move"]);
@@ -228,7 +347,9 @@ void Search::think() {
 
   Threads.timer->run = true;
   Threads.timer->notify_one(); // Wake up the recurring timer
-
+  /*
+  探索を開始
+  */
   id_loop(RootPos); // Let's start searching !
 
   Threads.timer->run = false; // Stop the timer
@@ -266,6 +387,9 @@ finalize:
   }
 
   // Best move could be MOVE_NONE when searching on a stalemate position
+  /*
+  UCIに探索結果を返している
+  */
   sync_cout << "bestmove " << move_to_uci(RootMoves[0].pv[0], RootPos.is_chess960())
             << " ponder "  << move_to_uci(RootMoves[0].pv[1], RootPos.is_chess960())
             << sync_endl;
@@ -513,6 +637,11 @@ namespace {
     // Step 4. Transposition table lookup
     // We don't want the score of a partial search to overwrite a previous full search
     // TT value, so we use a different position key in case of an excluded move.
+	/*
+	ttMoveとはトランスポジションテーブルから取り出した指し手
+	但しルートノードではRootMoves[PVIdx].pv[0]から取り出した指し手
+	RootMoves[PVIdx].pv[0]の詳細は不明
+	*/
     excludedMove = ss->excludedMove;
     posKey = excludedMove ? pos.exclusion_key() : pos.key();
     tte = TT.probe(posKey);
@@ -650,6 +779,26 @@ namespace {
     // If we have a very good capture (i.e. SEE > seeValues[captured_piece_type])
     // and a reduced search returns a value much above beta, we can (almost) safely
     // prune the previous move.
+	/*
+	ProbCut とはオセロプログラムLogistello の開発者M.Buro 発案の前向き枝刈手法で、発展版のMulti-ProbCut という手法もある。
+
+	基本アイデアは、浅い探索は深い探索の近似になるということで、深い探索をする前に浅い探索を行い、結果が探索窓から
+	外れたらカットしても良いんじゃない？という手法。
+
+	残り深さが既定のd になったら、深さd' の探索を行う
+	評価値にマージンm を取り、探索窓から外れていないかチェック
+	外れた=>カット
+	外れない=>深さd の探索を行う
+	なお、窓から外れた外れないのチェックは、null-window search が賢く速い。
+
+	細かいことを考えずに、いい加減なコードを書く(なお、D_probcut はProbCut 
+	を行うとあらかじめ決めておいた深さで、上でいうd, D_shallow は浅い探索の深さで、上でいうd')。
+	http://d.hatena.ne.jp/tawake/20060710/1152520755 引用箇所
+	カットというのが
+		if (value >= rbeta)
+			return value;
+	の部分だと判断される
+	*/
     if (   !PvNode
         &&  depth >= 5 * ONE_PLY
         && !ss->skipNullMove
@@ -661,7 +810,9 @@ namespace {
         assert(rdepth >= ONE_PLY);
         assert((ss-1)->currentMove != MOVE_NONE);
         assert((ss-1)->currentMove != MOVE_NULL);
-
+		/*
+		pos.captured_piece_type()はとった駒種（do_move関数でst->capturedTypeに登録される)
+		*/
         MovePicker mp(pos, ttMove, History, pos.captured_piece_type());
         CheckInfo ci(pos);
 
@@ -693,7 +844,10 @@ namespace {
     }
 
 moves_loop: // When in check and at SpNode search starts from here
+	/*
+	countermovesはここで初期化されている
 
+	*/
     Square prevMoveSq = to_sq((ss-1)->currentMove);
     Move countermoves[] = { Countermoves[pos.piece_on(prevMoveSq)][prevMoveSq].first,
                             Countermoves[pos.piece_on(prevMoveSq)][prevMoveSq].second };
@@ -701,7 +855,9 @@ moves_loop: // When in check and at SpNode search starts from here
     Square prevOwnMoveSq = to_sq((ss-2)->currentMove);
     Move followupmoves[] = { Followupmoves[pos.piece_on(prevOwnMoveSq)][prevOwnMoveSq].first,
                              Followupmoves[pos.piece_on(prevOwnMoveSq)][prevOwnMoveSq].second };
-
+	/*
+	着手リスト生成
+	*/
     MovePicker mp(pos, ttMove, depth, History, countermoves, followupmoves, ss);
     CheckInfo ci(pos);
     value = bestValue; // Workaround a bogus 'uninitialized' warning under gcc
@@ -719,6 +875,9 @@ moves_loop: // When in check and at SpNode search starts from here
 
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
+	/*
+	ここからがメインの探索のはず
+	*/
     while ((move = mp.next_move<SpNode>()) != MOVE_NONE)
     {
       assert(is_ok(move));
@@ -859,6 +1018,9 @@ moves_loop: // When in check and at SpNode search starts from here
           quietsSearched[quietCount++] = move;
 
       // Step 14. Make the move
+	  /*
+	  ここで局面更新
+	  */
       pos.do_move(move, st, ci, givesCheck);
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
@@ -901,11 +1063,29 @@ moves_loop: // When in check and at SpNode search starts from here
           doFullDepthSearch = !pvMove;
 
       // Step 16. Full depth search, when LMR is skipped or fails high
+	  /*
+	  ここが下の階層に降りて行くところ
+	  qsearch関数かsearch関数かを選択しているが条件複雑で詳細不明
+	  SpNodeとかdoFullDepthSearchはなに
+	  doFullDepthSearchはseach関数の自動変数でbool型でstep15で設定されている
+	  詳細不明
+
+	  */
       if (doFullDepthSearch)
       {
           if (SpNode)
               alpha = splitPoint->alpha;
+		  /*
+		  newDepth < ONE_PLYが成立すれば
+		  givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO) : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
+		  を実行する
+		  newDepth < ONE_PLYが成立しなければ
+		  -search<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode)
+		  を実行する。
+		  つまり新しく設定された探索深さがONE_PLY(2)より小さい場合はqsearch関数を
+		  ONE_PLYより大きい場合はsearch関数を呼ぶ
 
+		  */
           value = newDepth < ONE_PLY ?
                           givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
                                      : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
@@ -915,12 +1095,26 @@ moves_loop: // When in check and at SpNode search starts from here
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
       // parent node fail low with value <= alpha and to try another move.
+	  /*
+	  newDepth < ONE_PLYが成立すれば
+	  givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO) : -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
+      を実行し
+	  newDepth < ONE_PLYが成立すれば
+	  -search<PV, false>(pos, ss+1, -beta, -alpha, newDepth, false)
+	  を実行する
+	  つまり新しく設定された探索深さがONE_PLY(2)より小さい場合はqsearch関数を
+	  ONE_PLYより大きい場合はsearch関数を呼ぶ
+	  上と同じような構造であるが、違うのはNonPVかPVかの違いだと思う
+	  */
       if (PvNode && (pvMove || (value > alpha && (RootNode || value < beta))))
           value = newDepth < ONE_PLY ?
                           givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
                                      : -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
                                      : - search<PV, false>(pos, ss+1, -beta, -alpha, newDepth, false);
       // Step 17. Undo move
+	  /*
+	  ここで局面復元
+	  */
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
@@ -1268,7 +1462,10 @@ moves_loop: // When in check and at SpNode search starts from here
 
   // update_stats() updates killers, history, countermoves and followupmoves stats after a fail-high
   // of a quiet move.
+  /*
+  killers,history,countermoves,followupmovesを更新する関数のようです
 
+  */
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt) {
 
     if (ss->killers[0] != move)

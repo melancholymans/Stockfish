@@ -376,6 +376,11 @@ void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits, S
       assert(!states.get());
   }
 
+  /*
+  RootMoveはクラスでそれをRootMovesというvectorに格納している
+  渡されたMove形式の指し手はこれまたRootMoveクラス内にあるstd::vector<Move> pv変数に入れている
+
+  */
   for (MoveList<LEGAL> it(pos); *it; ++it)
       if (   limits.searchmoves.empty()
           || std::count(limits.searchmoves.begin(), limits.searchmoves.end(), *it))
