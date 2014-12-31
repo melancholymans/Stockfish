@@ -37,7 +37,10 @@ static const char* PieceToChar[COLOR_NB] = { " PNBRQK", " pnbrqk" };
 /// cp <x>     The score from the engine's point of view in centipawns.
 /// mate <y>   Mate in y moves, not plies. If the engine is getting mated
 ///            use negative values for y.
-
+/*
+search.cppからの呼び出し、評価値とalpha,betaを表示しているが
+用途不明
+*/
 string score_to_uci(Value v, Value alpha, Value beta) {
 
   stringstream ss;
@@ -57,7 +60,9 @@ string score_to_uci(Value v, Value alpha, Value beta) {
 /// (g1f3, a7a8q, etc.). The only special case is castling moves, where we print
 /// in the e1g1 notation in normal chess mode, and in e1h1 notation in chess960
 /// mode. Internally castling moves are always encoded as "king captures rook".
-
+/*
+Move形式の指し手データを棋譜形式の文字列にする
+*/
 const string move_to_uci(Move m, bool chess960) {
 
   Square from = from_sq(m);
@@ -68,27 +73,39 @@ const string move_to_uci(Move m, bool chess960) {
 
   if (m == MOVE_NULL)
       return "0000";
-
+  /*
+  キャスリングが行われた時の移動先を計算
+  */
   if (type_of(m) == CASTLING && !chess960)
       to = make_square(to > from ? FILE_G : FILE_C, rank_of(from));
-
+  /*
+  移動元、移動先座標をを棋譜形式文字に変換
+  */
   string move = to_string(from) + to_string(to);
 
   if (type_of(m) == PROMOTION)
       move += PieceToChar[BLACK][promotion_type(m)]; // Lower case
-
+  /*a2a3qのようにPAWNが成った駒種を小文字で追加するが
+  成らない時はa2a3だけとなる*/
   return move;
 }
 
 
 /// move_from_uci() takes a position and a string representing a move in
 /// simple coordinate notation and returns an equivalent legal Move if any.
-
+/*
+棋譜形式指し手(a2a3）をMove形式の指し手に変換する
+*/
 Move move_from_uci(const Position& pos, string& str) {
-
+  /*
+  PAWNがなると最後に成った駒種を小文字１字が追加されるのでそれが大文字だったら小文字に変換する
+  */
   if (str.length() == 5) // Junior could send promotion piece in uppercase
       str[4] = char(tolower(str[4]));
-
+  /*
+  この局面での合法手を生成し棋譜形式に変換し引数の指し手と比較して合法手のなかに引数の指し手が
+  あればMove形式の指し手を返す、なければMOVE_NONEを返す
+  */
   for (MoveList<LEGAL> it(pos); *it; ++it)
       if (str == move_to_uci(*it, pos.is_chess960()))
           return *it;
@@ -96,10 +113,20 @@ Move move_from_uci(const Position& pos, string& str) {
   return MOVE_NONE;
 }
 
-
 /// move_to_san() takes a position and a legal Move as input and returns its
 /// short algebraic notation representation.
+/*
+指し手の棋譜表記
+相手の駒を取ったときは「Ｑｘｃ２」とします。（QueenがC2に移動しそのさい駒をとったという記法でｘがとったということを表している）
+チェックだったときは「Ｑｃ２＋」とします。
+チェックメイトだったときは「Ｑｃ２＃」とします。
+ポーンがプロモーション（昇格）したときは、「＝」と駒のアルファベットを付け足します。
 
+キャスリングをしたときは特別な表現をします。
+右にキャスリングしたときは「Ｏ－Ｏ」とします。
+左にキャスリングしたときは「Ｏ－Ｏ－Ｏ」とします。
+http://chess.plala.jp/p6-1.html
+*/
 const string move_to_san(Position& pos, Move m) {
 
   if (m == MOVE_NONE)
@@ -163,6 +190,9 @@ const string move_to_san(Position& pos, Move m) {
 
   if (pos.gives_check(m, CheckInfo(pos)))
   {
+	  /*
+	  実際に手を動かしてみた局面で合法手が0なら"#"(チエックメイト)非0なら"+"回避手があるならチエック
+	  */
       StateInfo st;
       pos.do_move(m, st);
       san += MoveList<LEGAL>(pos).size() ? "+" : "#";
@@ -176,7 +206,10 @@ const string move_to_san(Position& pos, Move m) {
 /// pretty_pv() formats human-readable search information, typically to be
 /// appended to the search log file. It uses the two helpers below to pretty
 /// format the time and score respectively.
-
+/*
+このファイル内のpretty_pv関数からのみ呼ばれている
+msec単位で渡された経過時間を時:分:秒形式に変換して返している
+*/
 static string format(int64_t msecs) {
 
   const int MSecMinute = 1000 * 60;
@@ -196,6 +229,9 @@ static string format(int64_t msecs) {
   return ss.str();
 }
 
+/*
+渡された評価値を変換しているがあまり意味がわからない
+*/
 static string format(Value v) {
 
   stringstream ss;
@@ -212,6 +248,11 @@ static string format(Value v) {
   return ss.str();
 }
 
+/*
+id_loop関数からのみ呼び出されておりOptions["Write Search Log"]が有効時のみ
+SearchLog.txtファイルにログを記録している
+
+*/
 string pretty_pv(Position& pos, int depth, Value value, int64_t msecs, Move pv[]) {
 
   const uint64_t K = 1000;
