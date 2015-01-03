@@ -60,6 +60,9 @@ struct RootMove {
   }
 
   bool operator<(const RootMove& m) const { return score > m.score; } // Ascending sort
+  /*
+  searchä÷êîÇÃcount(RootMoves.begin() + PVIdx, RootMoves.end(), move)Ç»Ç«Ç≈égÇÌÇÍÇÈ
+  */
   bool operator==(const Move& m) const { return pv[0] == m; }
 
   void extract_pv_from_tt(Position& pos);
