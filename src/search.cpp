@@ -218,7 +218,7 @@ namespace {
 /// Search::init() is called during startup to initialize various lookup tables
 /*
 main関数から呼ばれている
-用途不明
+search系の初期化
 */
 void Search::init() {
 
@@ -301,7 +301,8 @@ void Search::think() {
   TimeMgr.init(Limits, RootPos.game_ply(), RootColor);
 
   /*
-  用途不明
+  引き分け時の評価値
+  Options["Contempt Factor"]はデフォルトで0
   */
   int cf = Options["Contempt Factor"] * PawnValueEg / 100; // From centipawns
   DrawValue[ RootColor] = VALUE_DRAW - Value(cf);
@@ -695,7 +696,7 @@ namespace {
   // table here: This is taken care of after we return from the split point.
   /*
   NodeTypeとは？　
-  SpNodeとは　splitのSpかも、
+  SpNodeとは　splitのSpかも（探索分岐）
   id_loopからsearch関数を呼ぶ時はNodeType=Root,SpNode=falseで呼ばれる
   Depth depthは反復深化のたびに2->4->6と増えていく
 
@@ -1096,12 +1097,23 @@ moves_loop: // When in check and at SpNode search starts from here
     improving =   ss->staticEval >= (ss-2)->staticEval
                || ss->staticEval == VALUE_NONE
                ||(ss-2)->staticEval == VALUE_NONE;
+	/*
+	Singular Extensionとはそのノードの評価値が兄弟ノードの評価値より大きい場合地平線
+	効果などが疑われるのでそのノードの探索を延長する手法
+	探索延長が有効になる条件はRootNodeではないこと　＆＆　
+	SpNodeではないこと（SpNodeは探索分岐のこと？）　＆＆
+	depthが8*ONE_PLYより大きいこと（つまりRootNodeに近く、末端近くではないこと　＆＆
+	!excludedMoveってなに　＆＆
+	トランスポジションテーブルの評価値が下限値　＆＆
+	トランスポジションテーブルの指し手の深度が現在の深度より3*ONE_PLAY引いたものよりおおきいこと
 
+	兄弟のノードの評価値とか全然出てこないのは何故
+	*/
     singularExtensionNode =   !RootNode
                            && !SpNode
                            &&  depth >= 8 * ONE_PLY
                            &&  ttMove != MOVE_NONE
-                           && !excludedMove // Recursive singular search is not allowed
+                           && !excludedMove // Recursive(再帰的) singular search is not allowed(許された)->再帰的なシンギラー拡張は許されない？
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
 
@@ -1132,6 +1144,7 @@ moves_loop: // When in check and at SpNode search starts from here
 
 	  /*
 	  RootNodeのときはSpNodeはfalse
+	  SpNodeは探索分岐のこと？
 	  */
       if (SpNode)
       {
@@ -1163,15 +1176,29 @@ moves_loop: // When in check and at SpNode search starts from here
       ext = DEPTH_ZERO;
       captureOrPromotion = pos.capture_or_promotion(move);
 
+	  /*
+	  指し手パターンがノーマルで敵KINGへの利きを邪魔している駒がない場合
+		移動後に敵KINGに利きをきかす駒のbitboardをgivesCheckに与えるgivesCheckはbool型なのでbitboardがあればtrueになる、もちろんなしということもある
+	  そうでなければ gives_check関数を呼び王手がないか厳重にチエックする
+	  */
       givesCheck =  type_of(move) == NORMAL && !ci.dcCandidates
                   ? ci.checkSq[type_of(pos.piece_on(from_sq(move)))] & to_sq(move)
                   : pos.gives_check(move, ci);
 
+	  /*
+	  dangerous自体は「危険な」と言う意味
+	  王手が可能な手　OR　指し手パターンがNORMAL以外(PROMOTION,ENPASSANT,CASTLING)
+	  PAWNがRANK4以上の位置にいる.(RANK4はWHITE側からみた位置、BLACKからみるとRANK5以下）
+	  */
       dangerous =   givesCheck
                  || type_of(move) != NORMAL
                  || pos.advanced_pawn_push(move);
 
       // Step 12. Extend checks
+	  /*
+	  王手が可能な状態にある(givesCheck=true),静止探索しても評価値が0以上である
+	  ことを条件にONE_PLYだけ探索延長する
+	  */
       if (givesCheck && pos.see_sign(move) >= VALUE_ZERO)
           ext = ONE_PLY;
 
@@ -1180,6 +1207,17 @@ moves_loop: // When in check and at SpNode search starts from here
       // is singular and should be extended. To verify this we do a reduced search
       // on all the other moves but the ttMove and if the result is lower than
       // ttValue minus a margin then we extend the ttMove.
+	  /*
+	  Singular extension searchとは
+		そのノードの評価値が兄弟ノードの評価値より大きい場合地平線
+		効果などが疑われるのでそのノードの探索を延長する手法
+
+		ここのif文で別探索を現深度の半分で行っている
+		この部分での評価値によってext変数（深度延長変数）
+		にONE_PLY延長をかけている部分ではないか
+
+		詳細不明
+	  */
       if (    singularExtensionNode
           &&  move == ttMove
           && !ext
@@ -1200,9 +1238,20 @@ moves_loop: // When in check and at SpNode search starts from here
       }
 
       // Update the current move (this must be done after singular extension search)
+	  /*
+	  最終ここがSingular extensionの探索延長をかけているところ
+	  強制的にONE_PLY引いているのは何故
+	  */
       newDepth = depth - ONE_PLY + ext;
 
       // Step 13. Pruning at shallow depth (exclude PV nodes)
+	  /*
+	  枝刈り
+	  PｖNodeではない（PvNodeってなに）　＆＆
+	  王手がかかっていない　＆＆（王手がかかっているようなノードを枝刈りしては危険）
+	  王手が可能な手等重要な手ではない　＆＆
+	  bestValue > VALUE_MATED_IN_MAX_PLY(= マイナス31880)極端に評価値が悪いわけではないがよくもない？
+	  */
       if (   !PvNode
           && !captureOrPromotion
           && !inCheck
@@ -1211,6 +1260,10 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Move count based pruning
+		  /*
+		  現在深度が末端に近く手数もFutilityMoveCounts[improving][depth]（これが何かは不明）
+		  より多い　つまり結構、手数も深度も深く読んだ出のパスという枝刈り？
+		  */
           if (   depth < 16 * ONE_PLY
               && moveCount >= FutilityMoveCounts[improving][depth] )
           {
@@ -1220,9 +1273,15 @@ moves_loop: // When in check and at SpNode search starts from here
               continue;
           }
 
-          predictedDepth = newDepth - reduction<PvNode>(improving, depth, moveCount);
+		  /*
+		  用途不明
+		  */
+          predictedDepth = newDepth - reduction<PvNode>(improving, depth, moveCount);	//predictedDepth　=　予想の深度？
 
           // Futility pruning: parent node
+		  /*
+		  用途不明
+		  */
           if (predictedDepth < 7 * ONE_PLY)
           {
               futilityValue = ss->staticEval + futility_margin(predictedDepth)
@@ -1243,6 +1302,9 @@ moves_loop: // When in check and at SpNode search starts from here
           }
 
           // Prune moves with negative SEE at low depths
+		  /*
+		  用途不明
+		  */
           if (predictedDepth < 4 * ONE_PLY && pos.see_sign(move) < VALUE_ZERO)
           {
               if (SpNode)
@@ -1253,6 +1315,10 @@ moves_loop: // When in check and at SpNode search starts from here
       }
 
       // Check for legality just before making the move
+	  /*
+	  合法手であるかのチエック、合法手でなければこのノードはパス
+	  何故ここでチエックなのかもっと早くできないのかな
+	  */
       if (!RootNode && !SpNode && !pos.legal(move, ci.pinned))
       {
           moveCount--;
@@ -1272,6 +1338,11 @@ moves_loop: // When in check and at SpNode search starts from here
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
+	  /*
+	  枝切りなのか探索延長なのかすら不明、縮小？
+	  https://chessprogramming.wikispaces.com/Late+Move+Reductions
+	  最終的にはdoFullDepthSearchを設定するところがこの部分の結論？
+	  */
       if (    depth >= 3 * ONE_PLY
           && !pvMove
           && !captureOrPromotion
@@ -1315,7 +1386,7 @@ moves_loop: // When in check and at SpNode search starts from here
 	  /*
 	  ここが下の階層に降りて行くところ
 	  qsearch関数かsearch関数かを選択しているが条件複雑で詳細不明
-	  SpNodeとかdoFullDepthSearchはなに
+	  SpNode（探索分岐）、doFullDepthSearchはなに
 	  doFullDepthSearchはseach関数の自動変数でbool型でstep15で設定されている
 	  詳細不明
 
@@ -1345,10 +1416,10 @@ moves_loop: // When in check and at SpNode search starts from here
       // high (in the latter case search only if value < beta), otherwise let the
       // parent node fail low with value <= alpha and to try another move.
 	  /*
-	  newDepth < ONE_PLYが成立すれば
+	  newDepth < ONE_PLYが成立すれば（つまりあと１手で末端局面ならqsearch関数）
 	  givesCheck ? -qsearch<PV,  true>(pos, ss+1, -beta, -alpha, DEPTH_ZERO) : -qsearch<PV, false>(pos, ss+1, -beta, -alpha, DEPTH_ZERO)
       を実行し
-	  newDepth < ONE_PLYが成立すれば
+	  newDepth < ONE_PLYが成立しなければ（つまりまだ末端局面ではないなら）
 	  -search<PV, false>(pos, ss+1, -beta, -alpha, newDepth, false)
 	  を実行する
 	  つまり新しく設定された探索深さがONE_PLY(2)より小さい場合はqsearch関数を
@@ -1369,6 +1440,10 @@ moves_loop: // When in check and at SpNode search starts from here
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
       // Step 18. Check for new best move
+	  /*
+	  探索分岐しているThreadなら
+	  まだ詳細不明
+	  */
       if (SpNode)
       {
           splitPoint->mutex.lock();
@@ -1379,6 +1454,9 @@ moves_loop: // When in check and at SpNode search starts from here
       // Finished searching the move. If a stop or a cutoff occurred, the return
       // value of the search cannot be trusted, and we return immediately without
       // updating best move, PV and TT.
+	  /*
+	  用途不明
+	  */
       if (Signals.stop || thisThread->cutoff_occurred())
           return VALUE_ZERO;
 
@@ -1428,6 +1506,9 @@ moves_loop: // When in check and at SpNode search starts from here
       }
 
       // Step 19. Check for splitting the search
+	  /*
+	  SpNode出ない時の返り方？
+	  */
       if (   !SpNode
           &&  Threads.size() >= 2
           &&  depth >= Threads.minimumSplitDepth
@@ -1446,8 +1527,11 @@ moves_loop: // When in check and at SpNode search starts from here
           if (bestValue >= beta)
               break;
       }
-    }
+    }	//ここがメイン探索の終了
 
+	/*
+	SpNodeの時の返り方？
+	*/
     if (SpNode)
         return bestValue;
 
@@ -1463,14 +1547,23 @@ moves_loop: // When in check and at SpNode search starts from here
     // All legal moves have been searched and if there are no legal moves, it
     // must be mate or stalemate. If we are in a singular extension search then
     // return a fail low score.
+	/*
+	用途不明
+	*/
     if (!moveCount)
         bestValue = excludedMove ? alpha
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
 
     // Quiet best move: update killers, history, countermoves and followupmoves
+	/*
+	beta Cutが発生したときはupdate_stats関数をよんで
+	*/
     else if (bestValue >= beta && !pos.capture_or_promotion(bestMove) && !inCheck)
         update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount - 1);
 
+	/*
+	トランスポジションテーブルに登録
+	*/
     TT.store(posKey, value_to_tt(bestValue, ss->ply),
              bestValue >= beta  ? BOUND_LOWER :
              PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
@@ -1478,14 +1571,20 @@ moves_loop: // When in check and at SpNode search starts from here
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
+	/*
+	返る
+	*/
     return bestValue;
-  }
+  }	//ここがsearch関数の終了
 
 
   // qsearch() is the quiescence search function, which is called by the main
   // search function when the remaining depth is zero (or, to be more precise,
   // less than ONE_PLY).
-
+  /*
+  末端局面専用探索関数のはず
+  search関数に比べるとだいぶ行数が少ない
+  */
   template <NodeType NT, bool InCheck>
   Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
@@ -1506,6 +1605,9 @@ moves_loop: // When in check and at SpNode search starts from here
     Depth ttDepth;
 
     // To flag BOUND_EXACT a node with eval above alpha and no available moves
+	/*
+	探索分岐ならalphaをoldalphaに退避？
+	*/
     if (PvNode)
         oldAlpha = alpha;
 
@@ -1513,21 +1615,33 @@ moves_loop: // When in check and at SpNode search starts from here
     ss->ply = (ss-1)->ply + 1;
 
     // Check for an instant draw or if the maximum ply has been reached
+	/*
+	引き分け判定して引き分け　OR 最大深度まできたなら　評価値をもらって帰る
+	*/
     if (pos.is_draw() || ss->ply > MAX_PLY)
         return ss->ply > MAX_PLY && !InCheck ? evaluate(pos) : DrawValue[pos.side_to_move()];
 
     // Decide whether or not to include checks: this fixes also the type of
     // TT entry depth that we are going to use. Note that in qsearch we use
     // only two types of depth in TT: DEPTH_QS_CHECKS or DEPTH_QS_NO_CHECKS.
+	/*
+	用途不明
+	*/
     ttDepth = InCheck || depth >= DEPTH_QS_CHECKS ? DEPTH_QS_CHECKS
                                                   : DEPTH_QS_NO_CHECKS;
 
     // Transposition table lookup
+	/*
+	トランスポジションテーブルに手があるか調べる、あればttMoveに手を入れておく
+	*/
     posKey = pos.key();
     tte = TT.probe(posKey);
     ttMove = tte ? tte->move() : MOVE_NONE;
     ttValue = tte ? value_from_tt(tte->value(),ss->ply) : VALUE_NONE;
 
+	/*
+	トランスポジションテーブルの手の評価値が真値ならトランスポジションテーブルの評価値を返す
+	*/
     if (   tte
         && tte->depth() >= ttDepth
         && ttValue != VALUE_NONE // Only in case of TT access race
@@ -1540,16 +1654,25 @@ moves_loop: // When in check and at SpNode search starts from here
     }
 
     // Evaluate the position statically
+	/*
+	この状態で王手がかかっている場合はマイナス32001を返す
+	*/
     if (InCheck)
     {
         ss->staticEval = VALUE_NONE;
         bestValue = futilityBase = -VALUE_INFINITE;
     }
     else
+	/*
+	王手がかかっていない場合
+	*/
     {
         if (tte)
         {
             // Never assume anything on values stored in TT
+			/*
+			用途不明
+			*/
             if ((ss->staticEval = bestValue = tte->eval_value()) == VALUE_NONE)
                 ss->staticEval = bestValue = evaluate(pos);
 
@@ -1558,10 +1681,16 @@ moves_loop: // When in check and at SpNode search starts from here
                 if (tte->bound() & (ttValue > bestValue ? BOUND_LOWER : BOUND_UPPER))
                     bestValue = ttValue;
         }
+		/*
+		用途不明
+		*/
         else
             ss->staticEval = bestValue = evaluate(pos);
 
         // Stand pat. Return immediately if static value is at least beta
+		/*
+		用途不明
+		*/
         if (bestValue >= beta)
         {
             if (!tte)
@@ -1581,6 +1710,9 @@ moves_loop: // When in check and at SpNode search starts from here
     // to search the moves. Because the depth is <= 0 here, only captures,
     // queen promotions and checks (only if depth >= DEPTH_QS_CHECKS) will
     // be generated.
+	/*
+	この先はなに？
+	*/
     MovePicker mp(pos, ttMove, depth, History, to_sq((ss-1)->currentMove));
     CheckInfo ci(pos);
 
@@ -1687,7 +1819,9 @@ moves_loop: // When in check and at SpNode search starts from here
   // value_to_tt() adjusts a mate score from "plies to mate from the root" to
   // "plies to mate from the current position". Non-mate scores are unchanged.
   // The function is called before storing a value in the transposition table.
-
+  /*
+  用途不明
+  */
   Value value_to_tt(Value v, int ply) {
 
     assert(v != VALUE_NONE);
@@ -1700,7 +1834,9 @@ moves_loop: // When in check and at SpNode search starts from here
   // value_from_tt() is the inverse of value_to_tt(): It adjusts a mate score
   // from the transposition table (which refers to the plies to mate/be mated
   // from current position) to "plies to mate/be mated from the root".
-
+  /*
+  用途不明
+  */
   Value value_from_tt(Value v, int ply) {
 
     return  v == VALUE_NONE             ? VALUE_NONE
@@ -1713,7 +1849,7 @@ moves_loop: // When in check and at SpNode search starts from here
   // of a quiet move.
   /*
   killers,history,countermoves,followupmovesを更新する関数のようです
-
+  beta Cutが発生したとき呼ばれる
   */
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt) {
 
@@ -1749,7 +1885,9 @@ moves_loop: // When in check and at SpNode search starts from here
 
   // When playing with a strength handicap, choose best move among the MultiPV
   // set using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
-
+  /*
+  用途不明	
+  */
   Move Skill::pick_move() {
 
     static RKISS rk;
@@ -1843,7 +1981,9 @@ moves_loop: // When in check and at SpNode search starts from here
 /// We also consider both failing high nodes and BOUND_EXACT nodes here to
 /// ensure that we have a ponder move even when we fail high at root. This
 /// results in a long PV to print that is important for position analysis.
-
+/*
+用途不明
+*/
 void RootMove::extract_pv_from_tt(Position& pos) {
 
   StateInfo state[MAX_PLY_PLUS_6], *st = state;
@@ -1882,7 +2022,7 @@ void RootMove::extract_pv_from_tt(Position& pos) {
 /*
 ここにくるタイミングは反復深化でsearch関数から返ってきたところなので
 pvには１つづのRootMoveに対して最善手手順が登録されている
-ここではｐｖに入っている手をTT（トランスポートテーブル）に登録している
+ここではｐｖに入っている手をTT（トランスポジションテーブル）に登録している
 初手だけではなくPV全てTTに登録している
 */
 void RootMove::insert_pv_in_tt(Position& pos) {
@@ -1891,7 +2031,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
   const TTEntry* tte;
   int idx = 0; // Ply starts from 1, we need to start from 0
   /*
-  TTはトランスポートテーブルを表すグローバル変数
+  TTはトランスポジションテーブルを表すグローバル変数
   pv:（最善手手順）を入れる為の１次元の可変長配列で１つのRootMoveクラスに格納されている
   */
   do {
@@ -1914,7 +2054,11 @@ void RootMove::insert_pv_in_tt(Position& pos) {
 
 
 /// Thread::idle_loop() is where the thread is parked when it has no work to do
+/*
+Thread::split関数から呼ばれる
+optionのo["Threads"]を複数にしないと呼ばれない、デフォルトは1
 
+*/
 void Thread::idle_loop() {
 
   // Pointer 'this_sp' is not null only if we are called from split(), and not
