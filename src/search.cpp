@@ -1508,6 +1508,11 @@ moves_loop: // When in check and at SpNode search starts from here
       // Step 19. Check for splitting the search
 	  /*
 	  SpNode出ない時の返り方？
+	  idle_loop関数に行くのはここだけ
+	  まず最初にMainThreadがここにくる
+	  条件
+		SpNodeがfalseのこと
+
 	  */
       if (   !SpNode
           &&  Threads.size() >= 2
@@ -2057,7 +2062,7 @@ void RootMove::insert_pv_in_tt(Position& pos) {
 /*
 Thread::split関数から呼ばれる
 optionのo["Threads"]を複数にしないと呼ばれない、デフォルトは1
-
+つまり通常では呼ばれない
 */
 void Thread::idle_loop() {
 

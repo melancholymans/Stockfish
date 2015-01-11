@@ -17,6 +17,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+std::Threadで書き直すと分かりやすいかな（C++11）
+http://yohhoy.hatenablog.jp/entry/2013/12/15/204116
+*/
+
 #ifndef THREAD_H_INCLUDED
 #define THREAD_H_INCLUDED
 
@@ -32,6 +37,12 @@
 const int MAX_THREADS = 128;
 const int MAX_SPLITPOINTS_PER_THREAD = 8;
 
+/*
+MutexはWindowsではクリテイカルセクション（排他制御用）
+Windowsのスレッド関係命令にMutexがあるがstackfishでは使用していない
+WindowsのMutexはプロセス間で共有する同期に使用する
+ここでのMutexはクリテイカルセクションをUNIX風にMutexと呼んでいるだけ
+*/
 struct Mutex {
   Mutex() { lock_init(l); }
  ~Mutex() { lock_destroy(l); }
@@ -45,6 +56,23 @@ private:
   Lock l;
 };
 
+/*
+ConditionVariableは条件変数をつかったマルチスレッドの１手法の名前
+WindowsではEventに相当する
+
+UNIXには条件付き変数という同期技術があるがWindowsにはないようだ
+C++11に実装されたstd::Threadクラスにはあるがここでは使用されていない
+
+cond_init関数でEvent変数（WaitCondition c変数）を初期化し
+初期値はFALSEで設定される。
+
+wait関数は時間無制限でEvent変数を非シグナル状態にする
+つまりこのwait関数を呼び出したスレッドはEvent変数を所有し
+他のスレッドをサスペンド状態にする
+notify_one関数を呼び出すとEvent変数はシグナル状態となり
+他のスレッドをシグナル状態にする
+
+*/
 struct ConditionVariable {
   ConditionVariable() { cond_init(c); }
  ~ConditionVariable() { cond_destroy(c); }

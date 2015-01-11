@@ -25,6 +25,15 @@
 #include "thread.h"
 #include "ucioption.h"
 
+/*
+stackfishはメインスレッドとMainThreadスレッド、TimerThreadがある
+探索中に発生する探索分岐（split）はどう制御しているのかはまだわからない
+クラスの継承関係
+ThreadBase->Thread		->ThreadPool
+						->MainThread
+          ->TimerThread
+*/
+
 using namespace Search;
 
 ThreadPool Threads; // Global object
@@ -35,7 +44,10 @@ namespace {
 
  // start_routine() is the C function which is called when a new thread
  // is launched. It is a wrapper to the virtual function idle_loop().
+ /*
+ すぐ下のテンプレート関数new_thread関数からのみ呼び出される
 
+ */
  extern "C" { long start_routine(ThreadBase* th) { th->idle_loop(); return 0; } }
 
 
@@ -60,7 +72,10 @@ namespace {
 
 
 // notify_one() wakes up the thread when there is some work to do
-
+/*
+notify_oneはThreadBaseクラスが持っているEvent変数を
+シグナルにする
+*/
 void ThreadBase::notify_one() {
 
   mutex.lock();
@@ -149,6 +164,18 @@ void TimerThread::idle_loop() {
 
 // MainThread::idle_loop() is where the main thread is parked waiting to be started
 // when there is a new search. The main thread will launch all the slave threads.
+/*
+最初main関数からThreads::init()を呼ぶ
+ThreadsはThreadPoolクラスなのでinit関数からnew_thread<MainThread>を呼ぶ
+new_thread関数からthreadcreate関数（platform.hに定義してある関数でwindowsでは実質CreateThread関数を呼んでいる
+start_routine関数がに行き、idle_loop関数つまりここにくる
+最初に来た時はsearchingフラグがfalseなのでsleep状態に遷移
+
+UCIのgoコマンドからThreads.start_thinking(pos, limits, SetupStates)が呼ばれると
+notify_one関数を呼びsleep状態から抜け
+
+MainThread::idle_loop関数->think関数->id_loop関数->search関数と呼ばれるようになっている
+*/
 
 void MainThread::idle_loop() {
 
@@ -189,6 +216,13 @@ void ThreadPool::init() {
 
   timer = new_thread<TimerThread>();
   push_back(new_thread<MainThread>());
+  /*
+  Option["Threads"]に複数設定してあればnew_thread<Thread>で設定数だけスレッドを生成する
+  生成されたスレッドはsearch.cppのThread::idle_loop関数に行く
+  一旦sleepCondition.wait(mutex)で待機させられる
+  探索自体はMainThread::idle_loop関数->think関数->id_loop関数->search関数と呼ばれて行くが
+
+  */
   read_uci_options();
 }
 
@@ -357,7 +391,10 @@ void ThreadPool::wait_for_think_finished() {
 
 // start_thinking() wakes up the main thread sleeping in MainThread::idle_loop()
 // so to start a new search, then returns immediately.
+/*
+MainThread::idle_loop関数->think関数->id_loop関数->search関数と呼ばれるようになっている
 
+*/
 void ThreadPool::start_thinking(const Position& pos, const LimitsType& limits, StateStackPtr& states) {
 
   wait_for_think_finished();
