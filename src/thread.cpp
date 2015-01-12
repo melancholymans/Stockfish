@@ -288,7 +288,10 @@ Thread* ThreadPool::available_slave(const Thread* master) const {
 // told that they have been assigned work. This will cause them to instantly
 // leave their idle loops and call search(). When all threads have returned from
 // search() then split() returns.
-
+/*
+search関数のstep19から呼び出される（呼び出し条件いろいろ）
+Fakeはfalseで呼び出される
+*/
 template <bool Fake>
 void Thread::split(Position& pos, const Stack* ss, Value alpha, Value beta, Value* bestValue,
                    Move* bestMove, Depth depth, int moveCount,
@@ -301,6 +304,10 @@ void Thread::split(Position& pos, const Stack* ss, Value alpha, Value beta, Valu
   assert(splitPointsSize < MAX_SPLITPOINTS_PER_THREAD);
 
   // Pick the next available split point from the split point stack
+  /*
+  MAX_SPLITPOINTS_PER_THREAD=8だけの配列
+  おそらくスレッド単位で必要な情報を入れるものと思われる
+  */
   SplitPoint& sp = splitPoints[splitPointsSize];
 
   sp.masterThread = this;
@@ -323,11 +330,20 @@ void Thread::split(Position& pos, const Stack* ss, Value alpha, Value beta, Valu
   // Try to allocate available threads and ask them to start searching setting
   // 'searching' flag. This must be done under lock protection to avoid concurrent
   // allocation of the same slave by another master.
+  /*
+
+  */
   Threads.mutex.lock();
   sp.mutex.lock();
 
   sp.allSlavesSearching = true; // Must be set under lock protection
+  /*
+  ここのsplitPointsSizeはThreads[0].splitPointsSizeです（つまりMainThread用の変数なので
+  共有変数となるのでmutexのロックがか掛っている
+  splitPointsSize変数は探索分岐をしているスレッドの数
+  */
   ++splitPointsSize;
+
   activeSplitPoint = &sp;
   activePosition = NULL;
 
@@ -347,6 +363,9 @@ void Thread::split(Position& pos, const Stack* ss, Value alpha, Value beta, Valu
   sp.mutex.unlock();
   Threads.mutex.unlock();
 
+  /*
+  ここから探索分岐
+  */
   Thread::idle_loop(); // Force a call to base class idle_loop()
 
   // In the helpful master concept, a master can help only a sub-tree of its
@@ -358,6 +377,9 @@ void Thread::split(Position& pos, const Stack* ss, Value alpha, Value beta, Valu
   // We have returned from the idle loop, which means that all threads are
   // finished. Note that setting 'searching' and decreasing splitPointsSize is
   // done under lock protection to avoid a race with Thread::available_to().
+  /*
+  探索分岐が終了すればここに戻ってくる
+  */
   Threads.mutex.lock();
   sp.mutex.lock();
 

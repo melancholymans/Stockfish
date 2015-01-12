@@ -880,6 +880,8 @@ namespace {
 	/*
 	‚È‚É‚©‚Ì}Š ‚èH
 	‚±‚±‚ª––’[ˆ—‚Å‚Í->qsearchŠÖ”‚©‚ç•]‰¿ŠÖ”‚Ö‚¢‚­‚Ì‚Å‚Í
+	PvNode‚ÍPV‚©Root‚Ì‚Æ‚«true‚É‚È‚é‹t‚É‚»‚¤‚Å‚È‚¢NonPV‚Ì‚Æ‚«false
+
 	*/
     if (   !PvNode
         &&  depth < 4 * ONE_PLY
@@ -2128,7 +2130,9 @@ void Thread::idle_loop() {
           assert(activePosition == NULL);
 
           activePosition = &pos;
-
+		  /*
+		  nodeType‚É‰‚¶‚Ä•ªŠò‚·‚é
+		  */
           if (sp->nodeType == NonPV)
               search<NonPV, true>(pos, ss, sp->alpha, sp->beta, sp->depth, sp->cutNode);
 
