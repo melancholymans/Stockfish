@@ -23,13 +23,21 @@
 #include "bitboard.h"
 #include "tt.h"
 
+/*
+トランスポジションテーブルのグローバル変数
+*/
 TranspositionTable TT; // Our global transposition table
 
 
 /// TranspositionTable::resize() sets the size of the transposition table,
 /// measured in megabytes. Transposition table consists of a power of 2 number
 /// of clusters and each cluster consists of ClusterSize number of TTEntry.
-
+/*
+トランスポジションテーブルの初期化はmain関数から
+TT.resize(Options["Hash"])と呼ばれて初期化する
+Options["Hash"]はデフォルトでは32Mbyte
+取りえる値は1--16384Mbyteある
+*/
 void TranspositionTable::resize(uint64_t mbSize) {
 
   assert(msb((mbSize << 20) / sizeof(TTEntry)) < 32);
@@ -58,6 +66,9 @@ void TranspositionTable::resize(uint64_t mbSize) {
 /// with zeroes. It is called whenever the table is resized, or when the
 /// user asks the program to clear the table (from the UCI interface).
 
+/*
+
+*/
 void TranspositionTable::clear() {
 
   std::memset(table, 0, (hashMask + ClusterSize) * sizeof(TTEntry));
