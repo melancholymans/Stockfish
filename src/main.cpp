@@ -28,11 +28,31 @@
 
 /*test start*/
 using namespace Bitboards;
+#include "rkiss.h"
+#include <sstream>
+#include <string>
+#include <vector>
+#include <regex>
+#include "notation.h"
+
+bool func(const ExtMove& left, const ExtMove& right);
+
+using namespace std;
+
 enum LLType{
 	python,ruby,perl
 };
+void print_board(Position& pos);
 void test(void);
 template<LLType LT> void print(void);
+struct S{
+	int value = 42;
+	char* str = "takemori";
+	double f = 3.14159;
+	operator int() const { return value; }
+	operator char*() { return str; }
+	operator double()  { return f; }
+};
 /*test end*/
 
 int main(int argc, char* argv[]) {
@@ -240,7 +260,8 @@ void test(void)
 	for (Square s = SQ_A1; s <= SQ_H8; ++s){
 			printf("%s",Bitboards::pretty(PseudoAttacks[ROOK][s]).c_str());
 	}
-		
+	*/
+	/*	
 	printf("PseudoAttacks Bishop\n");
 	for (Square s = SQ_A1; s <= SQ_H8; ++s){
 			printf("%s",Bitboards::pretty(PseudoAttacks[BISHOP][s]).c_str());
@@ -305,6 +326,8 @@ void test(void)
 	/*
 	printf("FileABB\n");
 	printf(" %s", Bitboards::pretty(FileABB).c_str());
+	printf("FileHBB\n");
+	printf(" %s", Bitboards::pretty(FileHBB).c_str());
 	*/
 	/*
 	printf("SquareBB\n");
@@ -326,11 +349,170 @@ void test(void)
 	printf(" %s", Bitboards::pretty(SquareBB[SQ_B7]).c_str());
 	printf(" %s", Bitboards::pretty(SquareBB[SQ_B8]).c_str());
 	*/
-	printf("Rank1BB\n");
-	printf(" %s", Bitboards::pretty(Rank1BB).c_str());
-return;
+	/*
+	printf("RankBB\n");
+	printf(" %s", Bitboards::pretty(RankBB[RANK_1]).c_str());
+	printf(" %s", Bitboards::pretty(RankBB[RANK_8]).c_str());
+	printf("FILEBB\n");
+	printf(" %s", Bitboards::pretty(FileBB[FILE_A]).c_str());
+	printf(" %s", Bitboards::pretty(FileBB[FILE_H]).c_str());
+	
+	printf("AdjacentFilesBB\n");
+	printf(" %s", Bitboards::pretty(AdjacentFilesBB[FILE_A]).c_str());
+	printf(" %s", Bitboards::pretty(AdjacentFilesBB[FILE_B]).c_str());
+
+	printf("InFrontBB\n");
+	printf(" %s", Bitboards::pretty(InFrontBB[WHITE][RANK_2]).c_str());
+	printf(" %s", Bitboards::pretty(InFrontBB[WHITE][RANK_7]).c_str());
+	printf(" %s", Bitboards::pretty(InFrontBB[BLACK][RANK_2]).c_str());
+	printf(" %s", Bitboards::pretty(InFrontBB[BLACK][RANK_7]).c_str());
+	*/
+
+	//attacks_from関数の機能を詳細に調べる
+	const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	/*
+	attacks_from関数の調査
+	このようなbitboardをかえす
+	つまり指定した駒コードが指定した座標にいる場合の利きのbitboardを返す
+	+---+---+---+---+---+---+---+---+
+	|   |   |   |   |   |   |   |   |
+	+---+---+---+---+---+---+---+---+
+	|   |   | X |   |   |   | X |   |
+	+---+---+---+---+---+---+---+---+
+	|   |   |   | X |   | X |   |   |
+	+---+---+---+---+---+---+---+---+
+	|   |   |   |   | S |   |   |   |
+	+---+---+---+---+---+---+---+---+
+	|   |   |   | X |   | X |   |   |
+	+---+---+---+---+---+---+---+---+
+	|   |   | X |   |   |   | X |   |
+	+---+---+---+---+---+---+---+---+
+	|   | X |   |   |   |   |   | X |
+	+---+---+---+---+---+---+---+---+
+	|   |   |   |   |   |   |   |   |
+	+---+---+---+---+---+---+---+---+
+	*/
+	/*
+	Position pos(StartFEN, false, Threads.main()); // The root position
+	Square sq = SQ_D6;
+	Bitboard bb = pos.attacks_from(B_BISHOP, sq);
+	printf(" %s", Bitboards::pretty(bb).c_str());
+	*/
+	/*
+	attackers_to関数の調査
+	*/
+	/*
+	Position pos_to("r1bbk1nr/pp3p1p/2n5/1N4p1/2Np1B2/8/PPP2PPP/2KR1B1R w kq - 0 13", false, Threads.main()); // The root position
+	bb = pos_to.attackers_to(SQ_D6);
+	printf(" %s", Bitboards::pretty(bb).c_str());
+	*/
+	/*
+	shift_bb関数の調査
+	*/
+	/*
+	Bitboard bb = Rank2BB;
+	printf(" %s", Bitboards::pretty(Rank2BB).c_str());
+	printf(" %s", Bitboards::pretty(shift_bb<DELTA_NE>(bb)).c_str());
+	*/
+	RKISS rk;
+	/*
+	オプション機能の確認
+	*/
+	int cf = Options["Contempt Factor"] * PawnValueEg / 100; // From centipawns
+
+	stringstream ss;
+
+	ss << Options["Threads"];
+	/*
+	型変換演算子
+	*/
+	/*
+	S s;
+	int v = int(s);			//明示的な型変換
+	printf("%d\n", v);
+	char* str = (char*)s;	//明示的な型変換
+	printf("%s\n", str);	
+	double f = s;		//暗黙の型変換
+	printf("%f\n", f);
+	*/
+	/*
+	basic_string
+	*/
+	int a = stoi("314");
+	cout << a << endl;
+	size_t idx;
+	int b = stoi("100", &idx);
+	cout << b << endl;
+	cout << idx << endl;
+
+	string s1 = to_string(27154);
+	cout << s1 << endl;
+	/*
+	string s2 = "123,456,789";
+
+	vector<string> result = split(move(s2), regex(","));
+	*/
+	/*
+	max_elementの機能の確認
+	valueの要素でMAXを決めている？
+	codeではless<>()をデフォルトで割りつけているだけのように見える
+	でも心配なので比較関数も利用できるバージョンも考えた
+	追記
+	大丈夫比較演算子のオーバーライドがちゃんと定義してある
+	*/
+	/*
+	ExtMove m[32];
+	for (int i= 0; i < 32; i++){
+		m[i].move = Move(i);
+		m[i].value = Value(rand());
+	}
+	ExtMove *begin = m;
+	ExtMove *end = &m[31];
+
+	for (int i = 0; i < 32; i++){
+		cout << m[i].move << "  " << m[i].value << endl;
+	}
+	cout << "max element " << max_element(begin,end)->move  /*<< "    " << max_element(begin, end)->value << endl;
+	cout << "end " << end->move << " " << end->value << endl;
+	*/
+	/*
+	move_to_sanの解明
+	*/
+	/*
+	Position pos(StartFEN, false, Threads.main()); // The root position
+	Move m = move_from_uci(pos, string("a2a3"));
+	cout << "move_to_san: " << move_to_san(pos, m) << endl;
+	*/
+	return;
 }
 
+bool func(const ExtMove& left, const ExtMove& right) 
+{
+	return left.value > right.value;	//小さい順	max_elementなのであまり意味がないかも
+	//return left.value < right.value;	//大きい順
+}
+
+#include <cstring>
+
+void print_board(Position& pos)
+{
+	using std::string;
+
+	const string PieceToChar(" PNBRQK  pnbrqk");
+
+	for (Rank r = RANK_8; r >= RANK_1; --r){
+		for (File f = FILE_A; f <= FILE_H; ++f){
+			const char s = PieceToChar[pos.piece_on(make_square(f, r))];
+			if (s == ' '){
+				printf("%c", '*');
+			}
+			else{
+				printf("%c", s);
+			}
+		}
+		printf("\n");
+	}
+}
 
 template<LLType LT> void print(void)
 {

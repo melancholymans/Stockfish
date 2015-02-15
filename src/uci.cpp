@@ -126,6 +126,9 @@ namespace {
 
     while (is >> token)
     {
+		/*
+		go ‚Ì‚ ‚Æ‚Ésearchmoves ‚ð‘±‚¯‚Ä“Á’è‚ÌŽw‚µŽè‚ða2a3,c2c4‚È‚Ç‚ÆŽw’è‚·‚é‚Æ‚»‚ÌŽè‚Ì‚Ý’Tõ‚·‚é
+		*/
         if (token == "searchmoves")
             while (is >> token)
                 limits.searchmoves.push_back(move_from_uci(pos, token));
@@ -358,25 +361,25 @@ ponder
 	Start searching in pondering mode. Do not exit the search in ponder mode, even if it's mate! This means that the last move sent in in the position string is the ponder move. The engine can do what it wants to do, but after a ponderhit command it should execute the suggested move to ponder on. This means that the ponder move sent by the GUI can be interpreted as a recommendation about which move to ponder. However, if the engine decides to ponder on a different move, it should not display any mainlines as they are likely to be misinterpreted by the GUI because the GUI expects the engine to ponder on the suggested move.
 
 	btime <x>
-	Black has x milliseconds left on the clock
+		Black has x milliseconds left on the clock
 	wtime <x>
-	White has x milliseconds left on the clock
+		White has x milliseconds left on the clock
 	binc <x>
-	Black increment per move i milliseconds if x > 0.
+		Black increment per move i milliseconds if x > 0.
 	winc <x>
-	White increment per move i milliseconds if x > 0.
+		White increment per move i milliseconds if x > 0.
 	movestogo <x>
-	There are x moves to the next time control. This will only be sent if x > 0. If you don't get this and get the wtime and btime, it's sudden death.
+		There are x moves to the next time control. This will only be sent if x > 0. If you don't get this and get the wtime and btime, it's sudden death.
 	depth <x>
-	Search x plies only.
+		Search x plies only.
 	nodes <x>
-	Search x nodes only.
+		Search x nodes only.
 	mate <x>
-	Search for a mate in x moves. Programmers coming from computer chess should note that we follow the shogi convention for counting moves, i.e. we count what chess players usually describe as "plies" or "half moves". For instance, mate 5 means mate in 5 plies.
+		Search for a mate in x moves. Programmers coming from computer chess should note that we follow the shogi convention for counting moves, i.e. we count what chess players usually describe as "plies" or "half moves". For instance, mate 5 means mate in 5 plies.
 	movetime <x>
-	Search exactly x milliseconds.
+		Search exactly x milliseconds.
 	infinite
-	Search until the stop command is received. Do not exit the search without being told so in this mode!
+		Search until the stop command is received. Do not exit the search without being told so in this mode!
 
 stop
 	Stop calculating as soon as possible. Don't forget the bestmove and possibly the ponder token when finishing the search.
@@ -441,42 +444,42 @@ info
 	Additional info:
 
 	depth <x>
-	Search depth in plies.
+		Search depth in plies.
 	seldepth <x>
-	Selective search depth in plies. If the engine sends seldepth there must also be a depth present in the same string.
+		Selective search depth in plies. If the engine sends seldepth there must also be a depth present in the same string.
 	time <x>
-	The time searched in ms. This should be sent together with the pv.
+		The time searched in ms. This should be sent together with the pv.
 	nodes <x>
-	x nodes searched. The engine should send this info regularly.
+		x nodes searched. The engine should send this info regularly.
 	pv <move1> ... <movei>
-	The best line found.
+		The best line found.
 	multipv <num>
-	This for the multi pv mode. For the best move/pv add multipv 1 in the string when you send the pv. In k-best mode, always send all k variants in k strings together.
-	score
+		This for the multi pv mode. For the best move/pv add multipv 1 in the string when you send the pv. In k-best mode, always send all k variants in k strings together.
+		score
 	cp <x>
-	The score from the engine's point of view, in centipawns.
+		The score from the engine's point of view, in centipawns.
 	mate <y>
-	Mate in y plies. If the engine is getting mated, use negative values for y.
+		Mate in y plies. If the engine is getting mated, use negative values for y.
 	lowerbound
-	The score is just a lower bound.
+		The score is just a lower bound.
 	upperbound
-	The score is just an upper bound.
+		The score is just an upper bound.
 	currmove <move>
-	Currently searching this move.
+		Currently searching this move.
 	currmovenumber <x>
-	Currently searching move number x, for the first move x should be 1, not 0.
+		Currently searching move number x, for the first move x should be 1, not 0.
 	hashfull <x>
-	The hash is x permill full. The engine should send this info regularly.
+		The hash is x permill full. The engine should send this info regularly.
 	nps <x>
-	x nodes per second searched. the engine should send this info regularly.
+		x nodes per second searched. the engine should send this info regularly.
 	cpuload <x>
-	The cpu usage of the engine is x permill.
+		The cpu usage of the engine is x permill.
 	string <str>
-	Any string str which will be displayed be the engine. if there is a string command the rest of the line will be interpreted as <str>.
+		Any string str which will be displayed be the engine. if there is a string command the rest of the line will be interpreted as <str>.
 	refutation <move1> <move2> ... <movei>
-	Move <move1> is refuted by the line <move2> ... <movei>, where i can be any number >= 1. Example: after move 8h2b+ is searched, the engine can send info refutation 8h2b+ 1c2b if 1c2b is the best answer after 8h2b+ or if 1c2b refutes the move 8h2b+. If there is no refutation for 8h2b+ found, the engine should just send info refutation 8h2b+. The engine should only send this if the option USI_ShowRefutations is set to true.
+		Move <move1> is refuted by the line <move2> ... <movei>, where i can be any number >= 1. Example: after move 8h2b+ is searched, the engine can send info refutation 8h2b+ 1c2b if 1c2b is the best answer after 8h2b+ or if 1c2b refutes the move 8h2b+. If there is no refutation for 8h2b+ found, the engine should just send info refutation 8h2b+. The engine should only send this if the option USI_ShowRefutations is set to true.
 	currline <cpunr> <move1> ... <movei>
-	This is the current line the engine is calculating. <cpunr> is the number of the cpu if the engine is running on more than one cpu. <cpunr> = 1,2,3.... If the engine is just using one cpu, <cpunr> can be omitted. If <cpunr> is greater than 1, always send all k lines in k strings together. The engine should only send this if the option USI_ShowCurrLine is set to true.
+		This is the current line the engine is calculating. <cpunr> is the number of the cpu if the engine is running on more than one cpu. <cpunr> = 1,2,3.... If the engine is just using one cpu, <cpunr> can be omitted. If <cpunr> is greater than 1, always send all k lines in k strings together. The engine should only send this if the option USI_ShowCurrLine is set to true.
 
 option
 	This command tells the GUI which parameters can be changed in the engine. This should be sent once at engine startup after the usi and the id commands if any parameter can be changed in the engine. The GUI should parse this and build a dialog for the user to change the settings. Note that not every option should appear in this dialog, as some options like USI_Ponder, USI_AnalyseMode, etc. are better handled elsewhere or are set automatically.

@@ -783,8 +783,7 @@ bool Position::pseudo_legal(const Move m) const {
 
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 /*
-指し手に非合法手ではないかチエックしている
-ではない
+指し手が王手であればtrueを返す
 */
 bool Position::gives_check(Move m, const CheckInfo& ci) const {
 

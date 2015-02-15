@@ -71,6 +71,13 @@ namespace {
   std::max_elementはbeginからendの間の要素で最大もののイーサレータを返す
   ここで不明なのがExtMoveはMove,valueの２つの要素を持っているが（構造体）
   どの要素で比較するのか不明,いろいろ試験してみたがvalueで最大を検出している
+  追記
+  type.hに書かれている
+  inline bool operator<(const ExtMove& f, const ExtMove& s) {
+  return f.value < s.value;
+  }
+  が標準のless関数から呼び出されている(比較演算子のオーバーライド）
+  max_element関数から呼出す
   */
   inline ExtMove* pick_best(ExtMove* begin, ExtMove* end)
   {

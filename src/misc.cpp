@@ -28,6 +28,9 @@ using namespace std;
 
 /// Version number. If Version is left empty, then compile date in the format
 /// DD-MM-YY and show in engine_info.
+/*
+stackfishのバージョン番号
+*/
 static const string Version = "5";
 
 
@@ -35,7 +38,9 @@ static const string Version = "5";
 /// will be either "Stockfish <Tag> DD-MM-YY" (where DD-MM-YY is the date when
 /// the program was compiled) or "Stockfish <Version>", depending on whether
 /// Version is empty.
-
+/*
+stackfishの簡単な紹介
+*/
 const string engine_info(bool to_uci) {
 
   const string months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
@@ -62,7 +67,9 @@ const string engine_info(bool to_uci) {
 /// Debug functions used mainly to collect run-time statistics
 
 static int64_t hits[2], means[2];
-
+/*
+使っている痕跡ない
+*/
 void dbg_hit_on(bool b) { ++hits[0]; if (b) ++hits[1]; }
 void dbg_hit_on_c(bool c, bool b) { if (c) dbg_hit_on(b); }
 void dbg_mean_of(int v) { ++means[0]; means[1] += v; }

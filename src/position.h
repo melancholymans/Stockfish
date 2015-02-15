@@ -42,7 +42,7 @@ struct CheckInfo {
 
 	explicit CheckInfo(const Position&);
 
-	Bitboard dcCandidates;	//“GKING‚Éoin•t‚¯‚³‚ê‚½Ž©w‹îbitboard ‚Â‚Ü‚è“GKING‚Ö‚Ì—˜‚«‚ðŽ×–‚‚µ‚Ä‚¢‚éŽ©w‹î‚Ì‚±‚Æ
+	Bitboard dcCandidates;	//“GKING‚Épin•t‚¯‚³‚ê‚½Ž©w‹îbitboard ‚Â‚Ü‚è“GKING‚Ö‚Ì—˜‚«‚ðŽ×–‚‚µ‚Ä‚¢‚éŽ©w‹î‚Ì‚±‚Æ
 	Bitboard pinned;		//Ž©wKING‚Épin‚Â‚¯‚³‚ê‚½Ž©w‹îbitboard
 	Bitboard checkSq[PIECE_TYPE_NB];
 	Square ksq;				//“GKING‚ÌÀ•W
@@ -280,8 +280,7 @@ public:
 	*/
 	Piece moved_piece(Move m) const;
 	/*
-	—p“r•s–¾
-	Žæ‚é‹îŽíH
+	Žæ‚Á‚½‹îŽí‚ð“ü‚ê‚Ä‚¨‚­
 	*/
 	PieceType captured_piece_type() const;
 
@@ -548,7 +547,8 @@ inline Piece Position::piece_on(Square s) const {
 }
 
 /*
-’…Žèƒf[ƒ^‚©‚ç‹îƒf[ƒ^‚ðŽæ“¾‚·‚é
+’…Žèƒf[ƒ^‚©‚ç‹îƒR[ƒh‚ðŽæ“¾‚·‚é
+‹îŽí‚Å‚Í‚È‚¢
 */
 inline Piece Position::moved_piece(Move m) const {
   return board[from_sq(m)];
@@ -855,7 +855,7 @@ inline bool Position::capture(Move m) const {
 }
 
 /*
-—p“r•s–¾
+Žæ‚Á‚½‹î‚Ì‹îŽí‚ð“ü‚ê‚Ä‚¨‚­Ado_moveŠÖ”‚ÅXV‚³‚ê‚é
 */
 inline PieceType Position::captured_piece_type() const {
   return st->capturedType;

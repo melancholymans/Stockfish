@@ -500,6 +500,9 @@ struct ExtMove {
   Value value;
 };
 
+/*
+ExtMove同士の比較演算子のオーバライド
+*/
 inline bool operator<(const ExtMove& f, const ExtMove& s) {
   return f.value < s.value;
 }

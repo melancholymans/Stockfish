@@ -63,7 +63,7 @@ string型のkeyとは
 で、valueはOption(false, on_logger)です
 << 演算子がオーバライドされているのでこのファイルの後ろにある
 void Option::operator<<(const Option& o)
-関数を呼ぶことになる
+関数を呼ぶ
 */
 void init(OptionsMap& o) {
 
@@ -83,7 +83,7 @@ void init(OptionsMap& o) {
   o["Aggressiveness"]           << Option(100, 0, 200, on_eval);
   o["Cowardice"]                << Option(100, 0, 200, on_eval);
   o["Min Split Depth"]          << Option(0, 0, 12, on_threads);
-  o["Threads"]                  << Option(1, 1, MAX_THREADS, on_threads);
+  o["Threads"]                  << Option(3, 1, MAX_THREADS, on_threads);	//1->8,1,MAX_THREADS
   o["Hash"]                     << Option(32, 1, 16384, on_hash_size);
   o["Clear Hash"]               << Option(on_clear_hash);
   o["Ponder"]                   << Option(true);

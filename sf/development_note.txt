@@ -6,3 +6,58 @@
 2014/12/1
 	position.cppのinit関数を読み中
 	評価値の初期化が中心
+2014/12/5
+	ファイルを超えて利用できるかどうかをリンケージと言う
+	そのファイルの外部からでも利用できるものを外部リンケージを持つという
+	その内部でしか利用できないものは内部リンケージを持つという
+	staticをつけると内部リンケージになる
+		＜例＞
+			関数は標準で外部から利用できるが、staticを関数の前につけてやるとその内部だけの使用に限定できる
+			つまり内部リンケージを持たせた。
+2014/12/7
+	position.cppの解析中にpseudo_legal関数を調べることにした
+	そのため一旦position.cppからmovegen.cpp,movegen.hを先に調べることにした
+	CheckInfoを先にしらべる->OK
+2014/12/8
+	movegenを制御しているMovePickerクラスを調査中
+2014/12/14
+	movegen.cppをほぼ読んだ
+	つぎはPositionhに定義してあるStateInfoを調べる
+	Zobristを調査中
+2014/12/20
+	Zobrist自体はnamespace
+	book.cppにも同じ名前があるがこちらは構造体である。
+	別の機会に調査する
+	ZobristはPositionh.cppのinit関数で乱数生成関数RKISSで初期化する
+	set関数から呼び出されたset_state関数内で局面に応じてハッシュ値を設定し
+	あとはdo_move関数内で駒の動きに応じてハッシュ値を更新している。
+	そのハッシュ値をを保持しているのはpositionクラス内のStateInfo* st変数
+	StateInfo構造体定義
+	struct StateInfo {
+		Key pawnKey, materialKey;
+		Value npMaterial[COLOR_NB];
+		int castlingRights, rule50, pliesFromNull;
+		Score psq;
+		Square epSquare;
+
+		Key key;
+		Bitboard checkersBB;
+		PieceType capturedType;
+		StateInfo* previous;
+	};
+2014/12/22
+	position.cpp,position.hのコメント入れ終了
+	次はuci.cppのコメント入れ
+2014/12/24
+	ucioption.cpp,ucioption.hのコメント入れ
+2014/12/26
+	movepick.cpp,movepick.hのコメント入れ
+2014/12/30
+	movepick.cpp,movepick.hのコメント入れ
+	notation.cpp,notaion.hのコメント入れ
+2014/12/31
+	昨日に引き続きnotation.cpp,notaion.hのコメント入れ
+2014/1/4
+	search.cppコメント入れ
+2014/1/19
+	なかなかThread.cppが進まないのでtt.cppに変更
